@@ -2,7 +2,8 @@
 
 AI Fiesta is a cutting-edge Next.js application that enables users to compare responses from multiple AI models side-by-side using OpenRouter. With a sleek, modern interface, users can evaluate different AI models simultaneously to find the best responses for their queries.
 
-![AI Fiesta Interface](https://placehold.co/800x400/4F46E5/FFFFFF?text=AI+Fiesta+Interface)
+![AI Fiesta Interface]<img width="1892" height="944" alt="image" src="https://github.com/user-attachments/assets/301ab8c5-12aa-40c8-93de-6f7322652011" />
+
 
 ## 🚀 Getting Started
 
