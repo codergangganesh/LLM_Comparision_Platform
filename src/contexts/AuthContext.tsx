@@ -1,21 +1,26 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/utils/supabase/client'
 
 interface User {
   id: string
   email: string
   user_metadata: {
     full_name?: string
+    avatar_url?: string
   }
 }
 
 interface AuthContextType {
   user: User | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
+  signIn: (email: string, password: string) => Promise<{ error?: { message: string } }>
+  signInWithGoogle: () => Promise<void>
+  signInWithGithub: () => Promise<void>
   signOut: () => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string) => Promise<{ error?: { message: string } }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -23,56 +28,133 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
+  const supabase = createClient()
 
   useEffect(() => {
-    // Simulate checking for an existing session
+    // Check for an existing session
     const checkSession = async () => {
-      // In a real app, you would check for an existing session here
-      // For now, we'll just set a mock user
-      setUser({
-        id: '1',
-        email: 'user@example.com',
-        user_metadata: {
-          full_name: 'Test User'
+      try {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          setUser(session.user as User)
         }
-      })
-      setLoading(false)
+      } catch (error) {
+        console.error('Error checking session:', error)
+      } finally {
+        setLoading(false)
+      }
     }
 
     checkSession()
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        setUser(session.user as User)
+      } else {
+        setUser(null)
+      }
+      setLoading(false)
+    })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {
-    // Simulate sign in
-    setUser({
-      id: '1',
-      email,
-      user_metadata: {
-        full_name: 'Test User'
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      
+      if (error) {
+        return { error }
       }
-    })
+      
+      if (data.session) {
+        setUser(data.session.user as User)
+        router.push('/chat')
+      }
+      
+      return { error: undefined }
+    } catch (error) {
+      console.error('Sign in error:', error)
+      return { error: { message: 'An unexpected error occurred' } }
+    }
+  }
+
+  const signInWithGoogle = async () => {
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/chat`,
+        },
+      })
+    }
+  }
+
+  const signInWithGithub = async () => {
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/chat`,
+        },
+      })
+    }
   }
 
   const signOut = async () => {
-    // Simulate sign out
-    setUser(null)
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+      router.push('/')
+    } catch (error) {
+      console.error('Sign out error:', error)
+    }
   }
 
   const signUp = async (email: string, password: string) => {
-    // Simulate sign up
-    setUser({
-      id: '1',
-      email,
-      user_metadata: {
-        full_name: 'Test User'
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/chat`,
+        },
+      })
+      
+      if (error) {
+        return { error }
       }
-    })
+      
+      if (data.session) {
+        setUser(data.session.user as User)
+        router.push('/chat')
+      } else if (data.user) {
+        // Email confirmation required
+        router.push('/auth')
+      }
+      
+      return { error: undefined }
+    } catch (error) {
+      console.error('Sign up error:', error)
+      return { error: { message: 'An unexpected error occurred' } }
+    }
   }
 
   const value = {
     user,
     loading,
     signIn,
+    signInWithGoogle,
+    signInWithGithub,
     signOut,
     signUp
   }

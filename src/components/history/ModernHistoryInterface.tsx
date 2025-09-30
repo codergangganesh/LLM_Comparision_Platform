@@ -1,23 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
-import { 
-  Search, 
-  Trash2, 
-  Clock, 
-  MessageSquare, 
-  Brain, 
-  ChevronDown, 
-  Plus,
-  BarChart3,
-  Settings,
-  User,
-  LogOut,
-  Cog,
-  X
-} from 'lucide-react'
+import { useState, useEffect, useRef } from 'react'
+import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
+import { useAuth } from '@/contexts/AuthContext'
+import { usePathname } from 'next/navigation'
 
 interface ChatSession {
   id: string
@@ -28,6 +15,7 @@ interface ChatSession {
 }
 
 export default function ModernHistoryInterface() {
+  const { signOut } = useAuth()
   const pathname = usePathname()
   const [darkMode] = useState(false)
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([])
@@ -278,6 +266,7 @@ export default function ModernHistoryInterface() {
                     onClick={() => {
                       setShowProfileDropdown(false);
                       // Handle logout
+                      signOut();
                     }}
                   >
                     <LogOut className="w-4 h-4" />

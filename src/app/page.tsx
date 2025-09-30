@@ -1,15 +1,19 @@
 "use client";
-import { useMemo, useState } from "react";
-import { AVAILABLE_MODELS } from "@/lib/models";
-import Sidebar from "@/components/layout/AdvancedSidebar";
-
-import Link from "next/link";
-import { MessageSquare, BarChart3 } from "lucide-react";
-
-type Result = { model: string; content?: string; error?: string };
-
+import LandingPage from "@/components/landing/LandingPage";
+import { useAuth } from "@/contexts/AuthContext";
 import { redirect } from 'next/navigation'
+import { useEffect } from "react";
 
 export default function Home() {
-  redirect('/chat')
+  const { user } = useAuth();
+
+  // Redirect authenticated users to the chat page
+  useEffect(() => {
+    if (user) {
+      redirect('/chat');
+    }
+  }, [user]);
+
+  // Show landing page for all users (authenticated or not)
+  return <LandingPage />;
 }

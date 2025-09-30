@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Sun, Moon, LogOut, User, Settings, Plus, Trash2 } from 'lucide-react'
 import DeleteAccountConfirmation from './DeleteAccountConfirmation'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface ProfileDropdownProps {
   darkMode: boolean
@@ -15,6 +16,7 @@ export default function ProfileDropdown({
   onToggleDarkMode,
   onNewConversation
 }: ProfileDropdownProps) {
+  const { signOut } = useAuth()
   const [isOpen, setIsOpen] = useState(false)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
@@ -139,6 +141,9 @@ export default function ProfileDropdown({
               </button>
               
               <button 
+                onClick={() => {
+                  signOut()
+                }}
                 className="flex items-center space-x-3 w-full px-3 py-2 rounded-lg hover:bg-red-500/20 text-red-600 hover:text-red-500 transition-colors"
                 aria-label="Sign out"
               >

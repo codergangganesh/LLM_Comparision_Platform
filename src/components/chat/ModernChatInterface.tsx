@@ -1,15 +1,14 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
-import { Send, Settings, Plus, MessageSquare, Sparkles, Brain, BarChart3, ChevronDown, User, LogOut, Cog, Clock, Trash2 } from 'lucide-react'
+import { Send, Settings, Plus, MessageSquare, Sparkles, Brain, BarChart3, ChevronDown, User, LogOut, Cog } from 'lucide-react'
 import { AVAILABLE_MODELS } from '@/lib/models'
 import { AIModel } from '@/types/app'
 import AIResponseCard from './AIResponseCard'
 import ModelSelector from './ModelSelector'
 import BlankComparisonPage from './BlankComparisonPage'
 import Link from 'next/link'
-import DeleteAccountConfirmation from '@/components/layout/DeleteAccountConfirmation'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface ChatResponse {
   model: string
@@ -34,7 +33,7 @@ interface ModernChatInterfaceProps {
 }
 
 export default function ModernChatInterface({ initialConversation }: ModernChatInterfaceProps) {
-  const pathname = usePathname()
+  const { signOut } = useAuth()
   const [darkMode] = useState(false) // Simplified dark mode
   const [message, setMessage] = useState('')
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([])
@@ -46,7 +45,6 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
   const [showModelSelector, setShowModelSelector] = useState(false)
   const [showBlankPage, setShowBlankPage] = useState(false)
   const [showProfileDropdown, setShowProfileDropdown] = useState(false) // New state for profile dropdown
-  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false) // New state for delete confirmation
   const profileDropdownRef = useRef<HTMLDivElement>(null) // Ref for detecting clicks outside
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -290,13 +288,9 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
           <Link
             href="/chat"
             className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
-              pathname === '/chat'
-                ? darkMode 
-                  ? 'text-white bg-gray-700/50 border border-gray-600' 
-                  : 'text-slate-900 bg-slate-100/50 border border-slate-200'
-                : darkMode 
-                  ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
-                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
+              darkMode 
+                ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
             }`}
             title="Current Chat"
           >
@@ -310,37 +304,11 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
           </Link>
           
           <Link
-            href="/history"
-            className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
-              pathname === '/history'
-                ? darkMode 
-                  ? 'text-white bg-gray-700/50 border border-gray-600' 
-                  : 'text-slate-900 bg-slate-100/50 border border-slate-200'
-                : darkMode 
-                  ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
-                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
-            }`}
-            title="History"
-          >
-            <Clock className="w-5 h-5 transition-colors group-hover:text-blue-600" />
-            <span className="font-medium">History</span>
-            {/* Tooltip for hover */}
-            <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10 pointer-events-none">
-              View your chat history
-              <div className="absolute right-full top-1/2 transform -translate-y-1/2 -mr-1 w-0 h-0 border-t-4 border-b-4 border-r-4 border-r-gray-900 border-t-transparent border-b-transparent"></div>
-            </div>
-          </Link>
-          
-          <Link
             href="/dashboard"
             className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
-              pathname === '/dashboard'
-                ? darkMode 
-                  ? 'text-white bg-gray-700/50 border border-gray-600' 
-                  : 'text-slate-900 bg-slate-100/50 border border-slate-200'
-                : darkMode 
-                  ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
-                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
+              darkMode 
+                ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
             }`}
             title="Dashboard"
           >
@@ -364,7 +332,7 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
           <div className="relative" ref={profileDropdownRef}>
             <div 
               className="flex items-center justify-between cursor-pointer hover:bg-gray-700/10 dark:hover:bg-gray-700/30 p-2 rounded-lg transition-colors duration-200 group relative"
-              onMouseEnter={() => setShowProfileDropdown(true)}
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
               title="User Profile"
             >
               <div className="text-sm text-slate-700 dark:text-gray-300 truncate">user@example.com</div>
@@ -385,14 +353,11 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
             
             {/* Profile Dropdown Menu */}
             {showProfileDropdown && (
-              <div 
-                className={`absolute bottom-full right-0 mb-2 w-56 rounded-xl border shadow-xl transition-all duration-300 transform origin-bottom animate-fadeIn ${
-                  darkMode 
-                    ? 'bg-gray-800 border-gray-700' 
-                    : 'bg-white border-slate-200'
-                }`}
-                onMouseLeave={() => setShowProfileDropdown(false)}
-              >
+              <div className={`absolute bottom-full right-0 mb-2 w-56 rounded-xl border shadow-xl transition-all duration-300 transform origin-bottom animate-fadeIn ${
+                darkMode 
+                  ? 'bg-gray-800 border-gray-700' 
+                  : 'bg-white border-slate-200'
+              }`}>
                 <div className="py-2">
                   <div className="px-4 py-3 text-sm font-medium text-slate-900 dark:text-white border-b border-slate-200/30 dark:border-gray-700">
                     <div className="flex items-center space-x-2">
@@ -429,17 +394,8 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
                     className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-colors duration-200"
                     onClick={() => {
                       setShowProfileDropdown(false);
-                      setShowDeleteConfirmation(true); // Show delete confirmation
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>Delete Account</span>
-                  </div>
-                  <div 
-                    className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-colors duration-200"
-                    onClick={() => {
-                      setShowProfileDropdown(false);
                       // Handle logout
+                      signOut();
                     }}
                   >
                     <LogOut className="w-4 h-4" />
@@ -717,16 +673,6 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
             </div>
           </div>
         )}
-        
-        <DeleteAccountConfirmation
-          isOpen={showDeleteConfirmation}
-          onClose={() => setShowDeleteConfirmation(false)}
-          onConfirm={() => {
-            // This is where you would implement the actual account deletion logic
-            console.log('Account deleted')
-            setShowDeleteConfirmation(false)
-          }}
-        />
       </div>
     </div>
   )

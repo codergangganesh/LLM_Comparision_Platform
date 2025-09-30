@@ -1,77 +1,19 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { 
-  BarChart3, 
-  MessageSquare, 
-  Clock,
-  Brain
-} from 'lucide-react'
 
 export default function AdvancedSidebar() {
-  const pathname = usePathname()
-  
-  const navItems = [
-    {
-      name: 'Dashboard',
-      href: '/dashboard',
-      icon: BarChart3,
-    },
-    {
-      name: 'Chat',
-      href: '/chat',
-      icon: MessageSquare,
-    },
-    {
-      name: 'History',
-      href: '/history',
-      icon: Clock,
-    },
-  ]
-
   return (
-    <div className="fixed left-0 top-0 h-full w-80 backdrop-blur-xl border-r transition-colors duration-200 z-10
-      bg-gray-800/80 border-gray-700">
-      {/* Sidebar Content Container */}
-      <div className="flex flex-col h-full pb-20">
-        {/* Header with Logo */}
-        <div className="p-6 border-b border-gray-700">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Brain className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
-                AI Fiesta
-              </h1>
-            </div>
-          </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex-1 p-4">
-          <nav className="space-y-1">
-            {navItems.map((item) => {
-              const Icon = item.icon
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative w-full
-                    ${pathname === item.href
-                      ? 'text-white bg-gray-700/50 border border-gray-600' 
-                      : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-                    }`}
-                >
-                  <Icon className="w-5 h-5 transition-colors group-hover:text-blue-400" />
-                  <span className="font-medium">{item.name}</span>
-                </Link>
-              )
-            })}
-          </nav>
-        </div>
+    <div className="fixed left-0 top-0 h-full w-16 lg:w-72 border-r border-gray-200/30 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm z-10">
+      <div className="p-4 hidden lg:block">
+        <h2 className="text-lg font-bold">AI Fiesta</h2>
+        <nav className="mt-4 space-y-2">
+          <Link href="/dashboard" className="block px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">Dashboard</Link>
+          <Link href="/chat" className="block px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">Chat</Link>
+        </nav>
       </div>
     </div>
   )
 }
+
+

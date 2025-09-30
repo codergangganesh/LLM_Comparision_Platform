@@ -1,10 +1,26 @@
 'use client'
 
+import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
 import DashboardSidebar from '@/components/dashboard/DashboardSidebar'
+import { useRouter, useEffect } from 'next/navigation'
 
 export default function DataPage() {
+  const { user, loading } = useAuth()
+  const router = useRouter()
   const { darkMode } = useDarkMode()
+
+  // Redirect unauthenticated users to the auth page
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth')
+    }
+  }, [user, loading, router])
+
+  // Show nothing while loading or redirecting
+  if (loading || !user) {
+    return null
+  }
 
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
