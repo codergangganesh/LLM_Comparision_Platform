@@ -1,7 +1,18 @@
 import { NextRequest } from "next/server";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
-type MultiChatBody = { models: string[]; messages: ChatMessage[]; maxTokens?: number; temperature?: number };
+type MultiChatBody = { 
+  models: string[]; 
+  messages: ChatMessage[]; 
+  maxTokens?: number; 
+  temperature?: number;
+  message?: string; // For single message comparisons
+};
+
+// Define a proper error type
+type ApiError = {
+  message: string;
+};
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -9,15 +20,25 @@ export async function POST(req: NextRequest) {
     return new Response(JSON.stringify({ error: "Missing OPENROUTER_API_KEY" }), { status: 500 });
   }
 
-  const body = (await req.json()) as MultiChatBody;
+  const body: MultiChatBody = (await req.json()) as MultiChatBody;
+  
+  // Handle both single message and messages array formats
+  let messages: ChatMessage[] = [];
+  if (body.message) {
+    messages = [{ role: "user", content: body.message }];
+  } else if (Array.isArray(body.messages) && body.messages.length > 0) {
+    messages = body.messages;
+  } else {
+    return new Response(JSON.stringify({ error: "Either message or messages[] required" }), { status: 400 });
+  }
+
   if (!Array.isArray(body.models) || body.models.length === 0) {
     return new Response(JSON.stringify({ error: "models[] required" }), { status: 400 });
   }
-  if (!Array.isArray(body.messages) || body.messages.length === 0) {
-    return new Response(JSON.stringify({ error: "messages[] required" }), { status: 400 });
-  }
 
   try {
+    const startTime = Date.now(); // Track start time for response time calculation
+    
     const requests = body.models.map(async (modelId) => {
       const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -29,7 +50,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           model: modelId,
-          messages: body.messages,
+          messages: messages,
           max_tokens: body.maxTokens ?? 1024,
           temperature: body.temperature ?? 0.7,
           stream: false,
@@ -46,10 +67,18 @@ export async function POST(req: NextRequest) {
     });
 
     const results = await Promise.all(requests);
-    return Response.json({ results });
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: String(err?.message || err) }), { status: 500 });
+    const endTime = Date.now();
+    const responseTime = (endTime - startTime) / 1000; // Calculate response time in seconds
+
+    return Response.json({ 
+      results,
+      responseTime // Include response time in the response
+    });
+  } catch (err: unknown) {
+    // Type the error properly
+    const error: ApiError = {
+      message: err instanceof Error ? err.message : String(err)
+    };
+    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
   }
 }
-
-
