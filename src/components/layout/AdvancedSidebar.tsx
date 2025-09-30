@@ -1,19 +1,43 @@
 'use client'
 
-import Link from 'next/link'
+import SharedSidebar from './SharedSidebar'
+import DeleteAccountPopup from './DeleteAccountPopup'
+import { useState } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function AdvancedSidebar() {
+  const { signOut } = useAuth()
+  const [showDeletePopup, setShowDeletePopup] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  
+  const handleDeletePopupOpen = () => setShowDeletePopup(true)
+  const handleDeletePopupClose = () => setShowDeletePopup(false)
+  const handleDeleteConfirm = async (password: string) => {
+    setIsDeleting(true)
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      // Handle actual deletion logic here
+      console.log('Account deleted with password:', password)
+      // Sign out the user after deletion
+      await signOut()
+    } catch (error) {
+      console.error('Error deleting account:', error)
+    } finally {
+      setIsDeleting(false)
+      setShowDeletePopup(false)
+    }
+  }
+
   return (
-    <div className="fixed left-0 top-0 h-full w-16 lg:w-72 border-r border-gray-200/30 bg-white/70 dark:bg-gray-900/70 backdrop-blur-sm z-10">
-      <div className="p-4 hidden lg:block">
-        <h2 className="text-lg font-bold">AI Fiesta</h2>
-        <nav className="mt-4 space-y-2">
-          <Link href="/dashboard" className="block px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">Dashboard</Link>
-          <Link href="/chat" className="block px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800">Chat</Link>
-        </nav>
-      </div>
-    </div>
+    <>
+      <SharedSidebar 
+        onDeletePopupOpen={handleDeletePopupOpen}
+        showDeletePopup={showDeletePopup}
+        onDeletePopupClose={handleDeletePopupClose}
+        onDeleteConfirm={handleDeleteConfirm}
+        isDeleting={isDeleting}
+      />
+    </>
   )
 }
-
-

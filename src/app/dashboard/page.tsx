@@ -210,7 +210,8 @@ export default function DashboardPage() {
     }`}>
       <AdvancedSidebar />
       
-      <div className="ml-16 lg:ml-72 transition-all duration-300">
+      {/* Adjusted margin to accommodate the wider sidebar */}
+      <div className="ml-80 transition-all duration-300">
         {/* Header */}
         <div className={`backdrop-blur-sm border-b transition-colors duration-200 ${
           darkMode 
