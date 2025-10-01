@@ -1,19 +1,16 @@
 "use client";
 import LandingPage from "@/components/landing/LandingPage";
 import { useAuth } from "@/contexts/AuthContext";
-import { redirect } from 'next/navigation'
-import { useEffect } from "react";
 
 export default function Home() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
-  // Redirect authenticated users to the chat page
-  useEffect(() => {
-    if (user) {
-      redirect('/chat');
-    }
-  }, [user]);
+  // Show loading state while checking auth
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
 
   // Show landing page for all users (authenticated or not)
+  // Authenticated users can navigate to chat through the UI
   return <LandingPage />;
 }

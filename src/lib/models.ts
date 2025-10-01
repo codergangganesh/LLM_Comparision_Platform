@@ -63,6 +63,22 @@ export const AVAILABLE_MODELS: AiModel[] = [
     contextWindowK: 2000,
     description: "Perplexity's reasoning-optimized model",
     capabilities: ["text", "search", "analysis"]
+  },
+  { 
+    id: "meta/llama-4", 
+    label: "LLaMA 4", 
+    provider: "Meta", 
+    contextWindowK: 2000,
+    description: "Meta's next-generation large language model",
+    capabilities: ["text", "reasoning", "multimodal"]
+  },
+  { 
+    id: "cohere/command-r-plus", 
+    label: "Command R+", 
+    provider: "Cohere", 
+    contextWindowK: 2000,
+    description: "Cohere's powerful model optimized for retrieval and RAG",
+    capabilities: ["text", "search", "retrieval"]
   }
 ];
 

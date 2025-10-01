@@ -24,7 +24,9 @@ export default function ModernModelShowcase() {
       'Alibaba': 'from-red-500 to-orange-500',
       'xAI': 'from-gray-700 to-gray-900',
       'Moonshot': 'from-cyan-500 to-blue-500',
-      'Augmxnt': 'from-pink-500 to-purple-500'
+      'Augmxnt': 'from-pink-500 to-purple-500',
+      'Perplexity': 'from-purple-500 to-pink-500',
+      'Cohere': 'from-indigo-500 to-blue-500'
     }
     return colors[provider] || 'from-slate-500 to-slate-700'
   }

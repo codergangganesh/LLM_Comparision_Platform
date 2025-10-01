@@ -2,8 +2,9 @@
 
 import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
-import DashboardSidebar from '@/components/dashboard/DashboardSidebar'
-import { useRouter, useEffect } from 'next/navigation'
+import { useRouter } from 'next/navigation'
+import { useEffect } from 'react'
+import AdvancedSidebar from '@/components/layout/AdvancedSidebar'
 
 export default function DataPage() {
   const { user, loading } = useAuth()
@@ -28,9 +29,9 @@ export default function DataPage() {
         ? 'bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'
     }`}>
-      <DashboardSidebar />
+      <AdvancedSidebar />
       
-      <div className="ml-80 transition-all duration-300">
+      <div className="ml-16 lg:ml-72 transition-all duration-300">
         <div className={`backdrop-blur-sm border-b transition-colors duration-200 ${
           darkMode 
             ? 'bg-gray-800/60 border-gray-700/30' 

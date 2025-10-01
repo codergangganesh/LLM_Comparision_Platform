@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
+import { useLoading } from '@/contexts/LoadingContext'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ArrowRight, MessageSquare, Zap, BarChart3, Shield, Clock, Users, Brain, Sparkles, Star, ChevronRight, Play, Globe, TrendingUp, Award, Infinity, Cpu, Layers, GitBranch, Settings as SettingsIcon, LogOut, Moon, Sun, DollarSign, MessageCircle } from 'lucide-react'
 import ModernModelShowcase from './ModernModelShowcase'
@@ -28,6 +29,7 @@ interface Step {
 
 export default function LandingPage() {
   const { user, signOut } = useAuth()
+  const { showLoading, hideLoading } = useLoading()
   const router = useRouter()
   const { darkMode, toggleDarkMode } = useDarkMode()
   const { openPaymentPopup } = usePopup()
@@ -155,7 +157,7 @@ export default function LandingPage() {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
+      await signOut(showLoading, hideLoading);
       router.push('/');
     } catch (error) {
       console.error('Error during sign out:', error);
@@ -163,11 +165,23 @@ export default function LandingPage() {
   };
 
   const handleGetStarted = () => {
-    if (user) {
+    showLoading('Loading authentication page...')
+    setTimeout(() => {
+      if (user) {
+        router.push('/chat');
+      } else {
+        router.push('/auth');
+      }
+      hideLoading()
+    }, 500)
+  };
+
+  const handleGoToChat = () => {
+    showLoading('Loading chat interface...')
+    setTimeout(() => {
       router.push('/chat');
-    } else {
-      router.push('/auth');
-    }
+      hideLoading()
+    }, 500)
   };
 
   const profilePicture = getProfilePicture();
@@ -229,7 +243,7 @@ export default function LandingPage() {
           <div className="flex items-center justify-between h-16">
             {/* Logo that redirects to Chat section */}
             <div className="flex items-center space-x-3">
-              <Link href={user ? "/compare" : "/"} className="flex items-center space-x-3">
+              <Link href="/" className="flex items-center space-x-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                   <Brain className="w-6 h-6 text-white" />
                 </div>
@@ -300,17 +314,17 @@ export default function LandingPage() {
                           : 'bg-white/90 border-slate-200/50'
                         }`}>
                         <Link
-                          href="/compare"
+                          href="/chat"
                           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${darkMode
                               ? 'text-gray-200 hover:bg-gray-700'
                               : 'text-slate-700 hover:bg-slate-100'
                             }`}
                         >
                           <MessageSquare className="w-4 h-4" />
-                          <span>Compare</span>
+                          <span>Chat</span>
                         </Link>
                         <Link
-                          href="/settings"
+                          href="/dashboard/settings"
                           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${darkMode
                               ? 'text-gray-200 hover:bg-gray-700'
                               : 'text-slate-700 hover:bg-slate-100'
@@ -352,12 +366,12 @@ export default function LandingPage() {
                   </button>
 
                   {/* Sign in button for non-logged-in users */}
-                  <Link
-                    href="/auth"
+                  <button
+                    onClick={handleGoToChat}
                     className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-6 py-3 rounded-xl text-sm font-semibold hover:shadow-lg transition-all duration-200 hover:scale-105"
                   >
-                    Get Started
-                  </Link>
+                   Get Started
+                  </button>
                 </div>
               )}
             </div>
@@ -440,8 +454,8 @@ export default function LandingPage() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
-              <Link
-                href={user ? "/compare" : "/auth"}
+              <button
+                onClick={user ? handleGoToChat : handleGetStarted}
                 className="group bg-gradient-to-r from-blue-500 to-purple-500 text-white px-8 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl transition-all duration-300 hover:scale-105 flex items-center space-x-3 relative overflow-hidden"
               >
                 {/* Glowing gold effect on hover */}
@@ -449,7 +463,7 @@ export default function LandingPage() {
                 <Play className="w-6 h-6 relative z-10" />
                 <span className="relative z-10">Start Comparing</span>
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform relative z-10" />
-              </Link>
+              </button>
 
               <div className="flex items-center space-x-4 text-slate-600 dark:text-gray-400">
                 <div className="flex -space-x-2">
@@ -936,7 +950,7 @@ export default function LandingPage() {
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-                <span>No credit card required</span>
+                <span>Pricing </span>
               </div>
             </div>
           </div>
@@ -1017,7 +1031,7 @@ export default function LandingPage() {
                 <ul className="space-y-2">
                   {[
                     { name: 'Compare Models', href: '/chat' },
-                    { name: 'View Comparisons', href: '/dashboard' },
+                    { name: 'View Comparisons', href: '/history' },
                     { name: 'Docs', href: '/docs' }
                   ].map((link, index) => (
                     <li key={index}>
@@ -1055,7 +1069,7 @@ export default function LandingPage() {
                   ].map((model, index) => (
                     <li key={index}>
                       <Link
-                        href="/compare"
+                        href="/chat"
                         className={`hover:text-white transition-colors duration-200 text-sm flex items-center space-x-2 group ${darkMode ? 'text-gray-400' : 'text-slate-400'
                           }`}
                       >

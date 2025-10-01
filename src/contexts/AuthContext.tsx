@@ -16,11 +16,11 @@ interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error?: { message: string } }>
-  signInWithGoogle: () => Promise<void>
-  signInWithGithub: () => Promise<void>
-  signOut: () => Promise<void>
-  signUp: (email: string, password: string) => Promise<{ error?: { message: string } }>
+  signIn: (email: string, password: string, showLoading?: (message: string) => void, hideLoading?: () => void) => Promise<{ error?: { message: string } }>
+  signInWithGoogle: (showLoading?: (message: string) => void) => Promise<void>
+  signInWithGithub: (showLoading?: (message: string) => void) => Promise<void>
+  signOut: (showLoading?: (message: string) => void, hideLoading?: () => void) => Promise<void>
+  signUp: (email: string, password: string, showLoading?: (message: string) => void, hideLoading?: () => void) => Promise<{ error?: { message: string } }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -63,74 +63,95 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, showLoading?: (message: string) => void, hideLoading?: () => void) => {
     try {
+      if (showLoading) showLoading('Signing in...')
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
       
       if (error) {
+        if (hideLoading) hideLoading()
         return { error }
       }
       
       if (data.session) {
         setUser(data.session.user as User)
-        router.push('/chat')
+        // Instead of automatically redirecting to chat, we'll let the user choose
+        // Redirect to landing page after login so user can choose what to do
+        router.push('/')
       }
       
+      if (hideLoading) hideLoading()
       return { error: undefined }
     } catch (error) {
+      if (hideLoading) hideLoading()
       console.error('Sign in error:', error)
       return { error: { message: 'An unexpected error occurred' } }
     }
   }
 
-  const signInWithGoogle = async () => {
-    // Only run on client side
-    if (typeof window !== 'undefined') {
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/chat`,
-        },
-      })
-    }
-  }
-
-  const signInWithGithub = async () => {
-    // Only run on client side
-    if (typeof window !== 'undefined') {
-      await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${window.location.origin}/chat`,
-        },
-      })
-    }
-  }
-
-  const signOut = async () => {
+  const signInWithGoogle = async (showLoading?: (message: string) => void) => {
     try {
+      if (showLoading) showLoading('Redirecting to Google...')
+      // Only run on client side
+      if (typeof window !== 'undefined') {
+        await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/`,
+          },
+        })
+      }
+    } catch (error) {
+      console.error('Google sign in error:', error)
+    }
+  }
+
+  const signInWithGithub = async (showLoading?: (message: string) => void) => {
+    try {
+      if (showLoading) showLoading('Redirecting to GitHub...')
+      // Only run on client side
+      if (typeof window !== 'undefined') {
+        await supabase.auth.signInWithOAuth({
+          provider: 'github',
+          options: {
+            redirectTo: `${window.location.origin}/`,
+          },
+        })
+      }
+    } catch (error) {
+      console.error('GitHub sign in error:', error)
+    }
+  }
+
+  const signOut = async (showLoading?: (message: string) => void, hideLoading?: () => void) => {
+    try {
+      if (showLoading) showLoading('Signing out...')
       await supabase.auth.signOut()
       setUser(null)
       router.push('/')
+      if (hideLoading) hideLoading()
     } catch (error) {
+      if (hideLoading) hideLoading()
       console.error('Sign out error:', error)
     }
   }
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, showLoading?: (message: string) => void, hideLoading?: () => void) => {
     try {
+      if (showLoading) showLoading('Creating account...')
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/chat`,
+          emailRedirectTo: `${typeof window !== 'undefined' ? window.location.origin : ''}/`,
         },
       })
       
       if (error) {
+        if (hideLoading) hideLoading()
         return { error }
       }
       
@@ -142,8 +163,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push('/auth')
       }
       
+      if (hideLoading) hideLoading()
       return { error: undefined }
     } catch (error) {
+      if (hideLoading) hideLoading()
       console.error('Sign up error:', error)
       return { error: { message: 'An unexpected error occurred' } }
     }

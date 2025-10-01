@@ -23,7 +23,8 @@ export default function ModelSelector({ selectedModels, onModelToggle }: ModelSe
       'Shisa': 'from-pink-500 to-purple-500',
       'xAI': 'from-gray-700 to-gray-900',
       'Alibaba': 'from-red-500 to-orange-500',
-      'Perplexity': 'from-purple-500 to-pink-500'
+      'Perplexity': 'from-purple-500 to-pink-500',
+      'Cohere': 'from-indigo-500 to-blue-500'
     }
     return colors[provider as keyof typeof colors] || 'from-slate-500 to-slate-700'
   }
@@ -41,7 +42,8 @@ export default function ModelSelector({ selectedModels, onModelToggle }: ModelSe
       'Shisa': 'bg-pink-100 text-pink-700',
       'xAI': 'bg-gray-100 text-gray-700',
       'Alibaba': 'bg-red-100 text-red-700',
-      'Perplexity': 'bg-purple-100 text-purple-700'
+      'Perplexity': 'bg-purple-100 text-purple-700',
+      'Cohere': 'bg-indigo-100 text-indigo-700'
     }
     return colors[provider as keyof typeof colors] || 'bg-slate-100 text-slate-700'
   }
@@ -60,6 +62,7 @@ export default function ModelSelector({ selectedModels, onModelToggle }: ModelSe
       case 'humor': return <Star className="w-3 h-3" />
       case 'multilingual': return <FileText className="w-3 h-3" />
       case 'search': return <Zap className="w-3 h-3" />
+      case 'retrieval': return <Zap className="w-3 h-3" />
       default: return <Brain className="w-3 h-3" />
     }
   }
@@ -97,8 +100,7 @@ export default function ModelSelector({ selectedModels, onModelToggle }: ModelSe
                 })
               }
             }}
-            className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all duration-200"
-          >
+            className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all duration-200">
             {selectedModels.length === AVAILABLE_MODELS.length ? 'Deselect All' : 'Select All'}
           </button>
           
@@ -121,8 +123,7 @@ export default function ModelSelector({ selectedModels, onModelToggle }: ModelSe
                 isSelected
                   ? 'bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-300 shadow-lg scale-105'
                   : 'bg-white/60 hover:bg-white/80 border border-slate-200/50 hover:shadow-md hover:scale-102'
-              }`}
-            >
+              }`}>
               {/* Selection Indicator */}
               <div className={`absolute top-3 right-3 w-6 h-6 rounded-full border-2 transition-all duration-200 ${
                 isSelected

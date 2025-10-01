@@ -89,16 +89,16 @@ src/
 ├── app/                    # Next.js app router pages
 │   ├── api/               # API routes
 │   ├── chat/              # Chat interface
-│   ├── dashboard/         # Analytics dashboard
-│   ├── history/           # Chat history
-│   └── layout.tsx         # Root layout
-├── components/            # Reusable UI components
-│   ├── chat/              # Chat-specific components
-│   ├── history/           # History components
-│   └── layout/            # Layout components
-├── lib/                   # Utility functions and data
-├── types/                 # TypeScript type definitions
-└── contexts/              # React context providers
+│   ├── dashboard/          # Analytics dashboard
+│   ├── history/            # Chat history
+│   └── layout.tsx          # Root layout
+├── components/             # Reusable UI components
+│   ├── chat/               # Chat-specific components
+│   ├── history/            # History components
+│   └── layout/             # Layout components
+├── lib/                    # Utility functions and data
+├── types/                  # TypeScript type definitions
+└── contexts/               # React context providers
 ```
 
 ### Core Components
@@ -115,28 +115,31 @@ src/
 AI Fiesta supports a wide range of models from leading AI providers:
 
 ### OpenAI
-- `openai/gpt-4-turbo` - GPT-4 Turbo with 128K context
-- `openai/gpt-4` - GPT-4 with improved instruction following
-- `openai/gpt-3.5-turbo` - Fast, cost-effective model
+- `openai/gpt-5-chat` - GPT-5, OpenAI's most advanced reasoning model
 
 ### Anthropic
-- `anthropic/claude-3-opus` - Most powerful model
-- `anthropic/claude-3-sonnet` - Balance of intelligence and speed
-- `anthropic/claude-3-haiku` - Fastest and most compact
+- `anthropic/claude-sonnet-4` - Claude 4 Sonnet, Anthropic's balanced intelligence model
 
 ### Google
-- `google/gemini-pro` - Google's conversational AI
-- `google/gemini-1.5-pro` - Multimodal model with 1M token context
+- `google/gemini-2.5-pro` - Gemini 2.5 Pro, Google's multimodal AI model
 
 ### Meta
-- `meta-llama/llama-3-70b-instruct` - Llama 3 70B parameter model
-- `meta-llama/llama-3-8b-instruct` - Llama 3 8B parameter model
+- `meta/llama-4` - LLaMA 4, Meta's next-generation large language model
 
-### Specialized Models
-- `deepseek/deepseek-chat` - DeepSeek's reasoning model
-- `qwen/qwen-2-72b-instruct` - Alibaba's Qwen 2
-- `mistralai/mixtral-8x22b-instruct` - Mistral's MoE model
-- `perplexity/sonar-medium` - Perplexity's reasoning model
+### DeepSeek
+- `deepseek/deepseek-r1-0528` - DeepSeek-R1, DeepSeek's reasoning-focused model
+
+### xAI
+- `xai/grok-2` - Grok 2, xAI's sassy and knowledgeable model
+
+### Alibaba
+- `qwen/qwen-2.5-72b-instruct` - Qwen 2.5 72B, Alibaba's large language model
+
+### Perplexity
+- `perplexity/sonar-reasoning` - Perplexity Sonar, Perplexity's reasoning-optimized model
+
+### Cohere
+- `cohere/command-r-plus` - Command R+, Cohere's powerful model optimized for retrieval and RAG
 
 ## 🛠️ Technical Stack
 
@@ -147,67 +150,3 @@ AI Fiesta supports a wide range of models from leading AI providers:
 - **State Management**: React Context API
 - **Build Tool**: Turbopack
 - **Deployment**: Vercel-ready
-
-## 📈 Performance Optimization
-
-- Client-side caching with localStorage
-- Efficient component re-rendering
-- Lazy loading for large responses
-- Optimized bundle size with Tree Shaking
-
-## 🔧 Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `OPENROUTER_API_KEY` | Your OpenRouter API key | Yes |
-| `NEXT_PUBLIC_SITE_URL` | Application URL | No |
-| `NEXT_PUBLIC_SITE_NAME` | Application name | No |
-
-## 🚀 Deployment
-
-### Vercel Deployment
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new) from the creators of Next.js.
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Add your environment variables in Vercel dashboard
-4. Deploy!
-
-### Manual Deployment
-```bash
-npm run build
-npm start
-```
-
-## 📚 Learn More
-
-To learn more about the technologies used in this project:
-
-- [Next.js Documentation](https://nextjs.org/docs) - Learn about Next.js features and API
-- [Tailwind CSS Documentation](https://tailwindcss.com/docs) - Utility-first CSS framework
-- [React Documentation](https://react.dev/reference/react) - React library reference
-- [OpenRouter Documentation](https://openrouter.ai/docs) - AI model API documentation
-
-## 🤝 Contributing
-
-Contributions are welcome! Here's how you can contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👥 Authors
-
-- **Mannam Ganesh Babu** - *CEO* - [GitHub](https://github.com/yourusername)
-
-## 🙏 Acknowledgments
-
-- Thanks to [OpenRouter](https://openrouter.ai) for providing access to multiple AI models
-- Built with [Next.js](https://nextjs.org), [Tailwind CSS](https://tailwindcss.com), and [Lucide Icons](https://lucide.dev)
-- Special thanks to the open-source community for the amazing tools and libraries

@@ -22,7 +22,9 @@ export default function AllModelsOverlay({ show, onClose, darkMode }: AllModelsO
       'Alibaba': 'from-red-500 to-orange-500',
       'xAI': 'from-gray-700 to-gray-900',
       'Moonshot': 'from-cyan-500 to-blue-500',
-      'Augmxnt': 'from-pink-500 to-purple-500'
+      'Augmxnt': 'from-pink-500 to-purple-500',
+      'Perplexity': 'from-purple-500 to-pink-500',
+      'Cohere': 'from-indigo-500 to-blue-500'
     }
     return colors[provider] || 'from-slate-500 to-slate-700'
   }
@@ -66,8 +68,7 @@ export default function AllModelsOverlay({ show, onClose, darkMode }: AllModelsO
               darkMode 
                 ? 'hover:bg-gray-700 text-gray-300' 
                 : 'hover:bg-gray-200 text-gray-600'
-            }`}
-          >
+            }`}>
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -82,8 +83,7 @@ export default function AllModelsOverlay({ show, onClose, darkMode }: AllModelsO
                   darkMode 
                     ? 'bg-gray-800/60 hover:bg-gray-800/80' 
                     : 'bg-white/80 hover:bg-white/90'
-                }`}
-              >
+                }`}>
                 {/* Gradient border effect */}
                 <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${getProviderColor(model.provider)} opacity-0 group-hover:opacity-20 transition-opacity duration-300`}></div>
                 
@@ -133,8 +133,7 @@ export default function AllModelsOverlay({ show, onClose, darkMode }: AllModelsO
                         darkMode 
                           ? 'bg-gray-700 text-gray-300' 
                           : 'bg-slate-100 text-slate-700'
-                      }`}
-                    >
+                      }`}>
                       {capability}
                     </span>
                   ))}

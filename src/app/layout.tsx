@@ -5,6 +5,8 @@ import { DarkModeProvider } from "@/contexts/DarkModeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { PopupProvider } from "@/contexts/PopupContext";
+import { LoadingProvider } from "@/contexts/LoadingContext";
+import RouteChangeListener from "@/components/ui/RouteChangeListener";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +37,10 @@ export default function RootLayout({
           <AuthProvider>
             <NotificationProvider>
               <PopupProvider>
-                {children}
+                <LoadingProvider>
+                  <RouteChangeListener />
+                  {children}
+                </LoadingProvider>
               </PopupProvider>
             </NotificationProvider>
           </AuthProvider>
