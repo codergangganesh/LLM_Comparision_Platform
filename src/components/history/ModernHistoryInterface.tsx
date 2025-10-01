@@ -1,10 +1,13 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown } from 'lucide-react'
+import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown, CreditCard } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePathname } from 'next/navigation'
+import { useDarkMode } from '@/contexts/DarkModeContext'
+import { usePopup } from '@/contexts/PopupContext'
+import { chatHistoryService } from '@/services/chatHistory.service'
 import DeleteAccountPopup from '../layout/DeleteAccountPopup'
 
 interface ChatSession {
@@ -18,7 +21,8 @@ interface ChatSession {
 export default function ModernHistoryInterface() {
   const { signOut, user } = useAuth()
   const pathname = usePathname()
-  const [darkMode] = useState(false)
+  const { darkMode } = useDarkMode()
+  const { openPaymentPopup } = usePopup()
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([])
   const [filteredSessions, setFilteredSessions] = useState<ChatSession[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -43,24 +47,45 @@ export default function ModernHistoryInterface() {
     }
   }
 
-  // Load chat sessions from localStorage
+  // Load chat sessions from API
   useEffect(() => {
-    const savedSessions = localStorage.getItem('aiFiestaChatSessions')
-    if (savedSessions) {
-      try {
-        const parsedSessions = JSON.parse(savedSessions)
-        // Convert timestamp strings back to Date objects
-        const sessionsWithDates: ChatSession[] = parsedSessions.map((session: any) => ({
+    const loadChatSessions = async () => {
+      // Try to load from API
+      const apiSessions = await chatHistoryService.getChatSessions()
+      if (apiSessions) {
+        // Convert to the format expected by the history interface
+        const sessionsWithResponseCount: ChatSession[] = apiSessions.map((session: any) => ({
           ...session,
-          timestamp: new Date(session.timestamp),
+          // Ensure timestamp is a proper Date object
+          timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
           responseCount: session.responses ? session.responses.length : 0
         }))
-        setChatSessions(sessionsWithDates)
-        setFilteredSessions(sessionsWithDates)
-      } catch (e) {
-        console.error('Failed to parse saved sessions:', e)
+        setChatSessions(sessionsWithResponseCount)
+        setFilteredSessions(sessionsWithResponseCount)
+        return
+      }
+      
+      // Fallback to localStorage if no API sessions
+      const savedSessions = localStorage.getItem('aiFiestaChatSessions')
+      if (savedSessions) {
+        try {
+          const parsedSessions = JSON.parse(savedSessions)
+          // Convert timestamp strings back to Date objects
+          const sessionsWithDates: ChatSession[] = parsedSessions.map((session: any) => ({
+            ...session,
+            // Ensure timestamp is a proper Date object
+            timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
+            responseCount: session.responses ? session.responses.length : 0
+          }))
+          setChatSessions(sessionsWithDates)
+          setFilteredSessions(sessionsWithDates)
+        } catch (e) {
+          console.error('Failed to parse saved sessions:', e)
+        }
       }
     }
+
+    loadChatSessions()
   }, [])
 
   // Filter sessions based on search term
@@ -76,21 +101,38 @@ export default function ModernHistoryInterface() {
     }
   }, [searchTerm, chatSessions])
 
-  const handleDeleteSession = (id: string) => {
+  const handleDeleteSession = async (id: string) => {
+    // Delete from API
+    await chatHistoryService.deleteChatSession(id)
+    
+    // Delete from local state
     const updatedSessions = chatSessions.filter(session => session.id !== id)
     setChatSessions(updatedSessions)
     setFilteredSessions(updatedSessions)
-    localStorage.setItem('aiFiestaChatSessions', JSON.stringify(updatedSessions))
+    
+    // Also remove from localStorage
+    const savedSessions = localStorage.getItem('aiFiestaChatSessions')
+    if (savedSessions) {
+      try {
+        const parsedSessions = JSON.parse(savedSessions)
+        const updatedLocalSessions = parsedSessions.filter((session: any) => session.id !== id)
+        localStorage.setItem('aiFiestaChatSessions', JSON.stringify(updatedLocalSessions))
+      } catch (e) {
+        console.error('Failed to update localStorage:', e)
+      }
+    }
   }
 
   const formatTimeAgo = (date: Date) => {
-    const now = new Date()
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+    // Ensure we have a proper Date object
+    const dateObj = date instanceof Date ? date : new Date(date);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
     
-    if (seconds < 60) return 'Just now'
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`
-    return `${Math.floor(seconds / 86400)}d ago`
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
   }
 
   return (
@@ -294,6 +336,19 @@ export default function ModernHistoryInterface() {
                     </div>
                   </Link>
                   
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      openPaymentPopup();
+                    }}
+                    className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200 text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
+                      <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <span className="font-medium">Pricing Plans</span>
+                  </button>
+                  
                   <Link href="/dashboard/settings">
                     <div 
                       className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
@@ -312,6 +367,7 @@ export default function ModernHistoryInterface() {
                     <div className="h-px bg-slate-200/30 dark:bg-gray-700/50 my-1"></div>
                   </div>
                   
+                  {/* Add Delete Account option */}
                   <div 
                     className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-all duration-200"
                     onClick={() => {

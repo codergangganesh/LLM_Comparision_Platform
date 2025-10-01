@@ -1,13 +1,15 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, User, Settings, LogOut, Trash2 } from 'lucide-react'
+import { ChevronDown, User, Settings, LogOut, Trash2, CreditCard } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePopup } from '@/contexts/PopupContext'
 import Link from 'next/link'
 import DeleteAccountPopup from './DeleteAccountPopup'
 
 export default function SimpleProfileIcon() {
   const { signOut, user } = useAuth()
+  const { openPaymentPopup } = usePopup()
   const [isOpen, setIsOpen] = useState(false)
   const [showDeletePopup, setShowDeletePopup] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -112,6 +114,19 @@ export default function SimpleProfileIcon() {
               </div>
               
               {/* Menu Items */}
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  openPaymentPopup();
+                }}
+                className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200 text-left"
+              >
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
+                  <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <span className="font-medium">Pricing Plans</span>
+              </button>
+              
               <Link href="/dashboard/profile">
                 <div 
                   className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"

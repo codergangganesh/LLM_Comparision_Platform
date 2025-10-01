@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useState, useRef, useEffect } from 'react'
-import { Sun, Moon, LogOut, User, Settings, Plus, Trash2 } from 'lucide-react'
+import { Sun, Moon, LogOut, User, Settings, Plus, Trash2, CreditCard } from 'lucide-react'
 import DeleteAccountConfirmation from './DeleteAccountConfirmation'
 import DeleteAccountPopup from './DeleteAccountPopup'
 import { useAuth } from '@/contexts/AuthContext'
+import { usePopup } from '@/contexts/PopupContext'
 
 interface ProfileDropdownProps {
   darkMode: boolean
@@ -19,6 +20,7 @@ export default function ProfileDropdown({
   onNewConversation
 }: ProfileDropdownProps) {
   const { signOut, user } = useAuth()
+  const { openPaymentPopup } = usePopup()
   const [isOpen, setIsOpen] = useState(false)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
   const [showDeletePopup, setShowDeletePopup] = useState(false)
@@ -183,6 +185,23 @@ export default function ProfileDropdown({
                 <span className="font-medium">
                   {darkMode ? 'Light Mode' : 'Dark Mode'}
                 </span>
+              </button>
+              
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  openPaymentPopup();
+                }}
+                className="flex items-center space-x-3 w-full px-4 py-3 rounded-lg hover:bg-indigo-50 dark:hover:bg-gray-700/50 text-slate-700 hover:text-slate-900 dark:text-gray-300 dark:hover:text-white transition-all duration-200"
+              >
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                  darkMode ? 'bg-gray-700' : 'bg-indigo-100'
+                }`}>
+                  <CreditCard className={`w-4 h-4 ${
+                    darkMode ? 'text-indigo-400' : 'text-indigo-600'
+                  }`} />
+                </div>
+                <span className="font-medium">Pricing Plans</span>
               </button>
               
               <Link href="/dashboard/profile">

@@ -1,74 +1,74 @@
 export const AI_MODELS = [
   {
-    id: 'gpt-5',
-    name: 'GPT-5',
-    displayName: 'GPT-5',
+    id: 'nvidia/nemotron-nano-9b-v2:free',
+    name: 'nvidia/nemotron-nano-9b-v2:free',
+    displayName: 'GPT-3.5 Turbo',
     provider: 'OpenAI',
-    description: 'OpenAI\'s most advanced reasoning model',
-    capabilities: ['text', 'code', 'analysis']
+    description: 'Fast and cost-effective model for simple tasks',
+    capabilities: ['text', 'code']
   },
   {
-    id: 'claude-4-sonnet',
-    name: 'Claude 4 Sonnet',
-    displayName: 'Claude 4 Sonnet',
+    id: 'gpt-4o-mini',
+    name: 'GPT-4o Mini',
+    displayName: 'GPT-4o Mini',
+    provider: 'OpenAI',
+    description: 'Small model, multimodal capabilities, great for everyday use',
+    capabilities: ['text', 'code', 'image']
+  },
+  {
+    id: 'claude-3-haiku-free',
+    name: 'Claude 3 Haiku (Free)',
+    displayName: 'Claude 3 Haiku (Free)',
     provider: 'Anthropic',
-    description: 'Anthropic\'s balanced intelligence model',
+    description: 'Anthropic\'s balanced intelligence model with free tier',
     capabilities: ['text', 'analysis', 'reasoning']
   },
   {
-    id: 'gemini-2.5-pro',
-    name: 'Gemini 2.5 Pro',
-    displayName: 'Gemini 2.5 Pro',
+    id: 'gemini-flash-1.5-free',
+    name: 'Gemini Flash 1.5 (Free)',
+    displayName: 'Gemini Flash 1.5 (Free)',
     provider: 'Google',
-    description: 'Google\'s multimodal AI model',
+    description: 'Google\'s fast multimodal AI model with free tier',
     capabilities: ['text', 'image', 'video', 'audio']
   },
   {
-    id: 'deepseek-r1',
-    name: 'DeepSeek-R1',
-    displayName: 'DeepSeek-R1',
-    provider: 'DeepSeek',
-    description: 'DeepSeek\'s reasoning-focused model',
-    capabilities: ['text', 'code', 'math']
-  },
-  {
-    id: 'grok-2',
-    name: 'Grok 2',
-    displayName: 'Grok 2',
-    provider: 'xAI',
-    description: 'xAI\'s sassy and knowledgeable model',
-    capabilities: ['text', 'humor', 'analysis']
-  },
-  {
-    id: 'qwen-2.5-72b',
-    name: 'Qwen 2.5 72B',
-    displayName: 'Qwen 2.5 72B',
-    provider: 'Alibaba',
-    description: 'Alibaba\'s large language model',
-    capabilities: ['text', 'code', 'multilingual']
-  },
-  {
-    id: 'sonar-reasoning',
-    name: 'Perplexity Sonar',
-    displayName: 'Perplexity Sonar',
-    provider: 'Perplexity',
-    description: 'Perplexity\'s reasoning-optimized model',
-    capabilities: ['text', 'search', 'analysis']
-  },
-  {
-    id: 'llama-4',
-    name: 'LLaMA 4',
-    displayName: 'LLaMA 4',
+    id: 'llama-3.1-8b-free',
+    name: 'LLaMA 3.1 8B (Free)',
+    displayName: 'LLaMA 3.1 8B (Free)',
     provider: 'Meta',
-    description: 'Meta\'s next-generation large language model',
-    capabilities: ['text', 'reasoning', 'multimodal']
+    description: 'Meta\'s efficient large language model with free tier',
+    capabilities: ['text', 'reasoning']
   },
   {
-    id: 'command-r-plus',
-    name: 'Command R+',
-    displayName: 'Command R+',
-    provider: 'Cohere',
-    description: 'Cohere\'s powerful model optimized for retrieval and RAG',
-    capabilities: ['text', 'search', 'retrieval']
+    id: 'mistral-7b-free',
+    name: 'Mistral 7B (Free)',
+    displayName: 'Mistral 7B (Free)',
+    provider: 'Mistral AI',
+    description: 'Mistral AI\'s efficient model with free tier',
+    capabilities: ['text', 'code']
+  },
+  {
+    id: 'phi-3-mini-free',
+    name: 'Phi-3 Mini (Free)',
+    displayName: 'Phi-3 Mini (Free)',
+    provider: 'Microsoft',
+    description: 'Microsoft\'s efficient model with very long context window',
+    capabilities: ['text', 'code', 'reasoning']
+  },
+  {
+    id: 'auto-select',
+    name: 'Auto Select',
+    displayName: 'Auto Select',
+    provider: 'OpenRouter',
+    description: 'Automatically select the best model for your request',
+    capabilities: ['text', 'code', 'analysis']
+  },
+  {
+    id: 'hermes-3-8b-free',
+    name: 'Hermes 3 8B (Free)',
+    displayName: 'Hermes 3 8B (Free)',
+    provider: 'Nous Research',
+    description: 'Highly capable reasoning model with free tier',
+    capabilities: ['text', 'code', 'reasoning']
   }
 ]

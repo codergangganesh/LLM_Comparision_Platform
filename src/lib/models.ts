@@ -9,76 +9,76 @@ export type AiModel = {
 
 export const AVAILABLE_MODELS: AiModel[] = [
   { 
-    id: "openai/gpt-5-chat", 
-    label: "GPT‑5", 
+    id: "openai/gpt-3.5-turbo", 
+    label: "GPT-3.5 Turbo", 
     provider: "OpenAI", 
-    contextWindowK: 2000,
-    description: "OpenAI's most advanced reasoning model",
-    capabilities: ["text", "code", "analysis"]
+    contextWindowK: 16000,
+    description: "Fast and cost-effective model for simple tasks",
+    capabilities: ["text", "code"]
   },
   { 
-    id: "anthropic/claude-sonnet-4", 
-    label: "Claude 4 Sonnet", 
+    id: "openai/gpt-4o-mini", 
+    label: "GPT-4o Mini", 
+    provider: "OpenAI", 
+    contextWindowK: 128000,
+    description: "Small model, multimodal capabilities, great for everyday use",
+    capabilities: ["text", "code", "image"]
+  },
+  { 
+    id: "qwen/qwen3-8b:free", 
+    label: "qwen/qwen3-8b:free", 
     provider: "Anthropic", 
     contextWindowK: 2000,
-    description: "Anthropic's balanced intelligence model",
+    description: "Anthropic's balanced intelligence model with free tier",
     capabilities: ["text", "analysis", "reasoning"]
   },
   { 
-    id: "google/gemini-2.5-pro", 
-    label: "Gemini 2.5 Pro", 
+    id: "google/gemini-flash-1.5:free", 
+    label: "Gemini Flash 1.5 (Free)", 
     provider: "Google", 
-    contextWindowK: 2000,
-    description: "Google's multimodal AI model",
+    contextWindowK: 10000,
+    description: "Google's fast multimodal AI model with free tier",
     capabilities: ["text", "image", "video", "audio"]
   },
   { 
-    id: "deepseek/deepseek-r1-0528", 
-    label: "DeepSeek-R1", 
-    provider: "DeepSeek", 
-    contextWindowK: 2000,
-    description: "DeepSeek's reasoning-focused model",
-    capabilities: ["text", "code", "math"]
-  },
-  { 
-    id: "xai/grok-2", 
-    label: "Grok 2", 
-    provider: "xAI", 
-    contextWindowK: 2000,
-    description: "xAI's sassy and knowledgeable model",
-    capabilities: ["text", "humor", "analysis"]
-  },
-  { 
-    id: "qwen/qwen-2.5-72b-instruct", 
-    label: "Qwen 2.5 72B", 
-    provider: "Alibaba", 
-    contextWindowK: 2000,
-    description: "Alibaba's large language model",
-    capabilities: ["text", "code", "multilingual"]
-  },
-  { 
-    id: "perplexity/sonar-reasoning", 
-    label: "Perplexity Sonar", 
-    provider: "Perplexity", 
-    contextWindowK: 2000,
-    description: "Perplexity's reasoning-optimized model",
-    capabilities: ["text", "search", "analysis"]
-  },
-  { 
-    id: "meta/llama-4", 
-    label: "LLaMA 4", 
+    id: "meta-llama/llama-3.1-8b-instruct:free", 
+    label: "LLaMA 3.1 8B (Free)", 
     provider: "Meta", 
-    contextWindowK: 2000,
-    description: "Meta's next-generation large language model",
-    capabilities: ["text", "reasoning", "multimodal"]
+    contextWindowK: 8000,
+    description: "Meta's efficient large language model with free tier",
+    capabilities: ["text", "reasoning"]
   },
   { 
-    id: "cohere/command-r-plus", 
-    label: "Command R+", 
-    provider: "Cohere", 
-    contextWindowK: 2000,
-    description: "Cohere's powerful model optimized for retrieval and RAG",
-    capabilities: ["text", "search", "retrieval"]
+    id: "mistralai/mistral-7b-instruct:free", 
+    label: "Mistral 7B (Free)", 
+    provider: "Mistral AI", 
+    contextWindowK: 8000,
+    description: "Mistral AI's efficient model with free tier",
+    capabilities: ["text", "code"]
+  },
+  { 
+    id: "microsoft/phi-3-mini-128k-instruct:free", 
+    label: "Phi-3 Mini (Free)", 
+    provider: "Microsoft", 
+    contextWindowK: 128000,
+    description: "Microsoft's efficient model with very long context window",
+    capabilities: ["text", "code", "reasoning"]
+  },
+  { 
+    id: "openrouter/auto", 
+    label: "Auto Select", 
+    provider: "OpenRouter", 
+    contextWindowK: 128000,
+    description: "Automatically select the best model for your request",
+    capabilities: ["text", "code", "analysis"]
+  },
+  { 
+    id: "nousresearch/hermes-3-llama-3.1-8b:free", 
+    label: "Hermes 3 8B (Free)", 
+    provider: "Nous Research", 
+    contextWindowK: 8000,
+    description: "Highly capable reasoning model with free tier",
+    capabilities: ["text", "code", "reasoning"]
   }
 ];
 

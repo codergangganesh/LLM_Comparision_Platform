@@ -7,6 +7,7 @@ import { NotificationProvider } from "@/contexts/NotificationContext";
 import { PopupProvider } from "@/contexts/PopupContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
 import RouteChangeListener from "@/components/ui/RouteChangeListener";
+import PricingPopup from "@/components/ui/PricingPopup";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,6 +41,7 @@ export default function RootLayout({
                 <LoadingProvider>
                   <RouteChangeListener />
                   {children}
+                  <PricingPopup />
                 </LoadingProvider>
               </PopupProvider>
             </NotificationProvider>

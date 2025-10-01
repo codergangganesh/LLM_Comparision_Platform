@@ -3,9 +3,10 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
-import { MessageSquare, BarChart3, Brain, Plus, Clock, ChevronDown, User, LogOut, Cog, Trash2 } from 'lucide-react'
+import { MessageSquare, BarChart3, Brain, Plus, Clock, ChevronDown, User, LogOut, Cog, Trash2, CreditCard } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import DeleteAccountPopup from './DeleteAccountPopup'
+import { usePopup } from '@/contexts/PopupContext'
 
 interface SharedSidebarProps {
   onDeletePopupOpen?: () => void
@@ -23,6 +24,7 @@ export default function SharedSidebar({
   isDeleting = false
 }: SharedSidebarProps) {
   const { signOut, user } = useAuth()
+  const { openPaymentPopup } = usePopup()
   const pathname = usePathname()
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [localShowDeletePopup, setLocalShowDeletePopup] = useState(false)
@@ -222,7 +224,20 @@ export default function SharedSidebar({
                   </div>
                 </div>
                 
-                {/* Menu Items */}
+                {/* Menu Items */}                
+                <button
+                  onClick={() => {
+                    setShowProfileDropdown(false);
+                    openPaymentPopup();
+                  }}
+                  className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
+                    <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <span className="font-medium">Pricing Plans</span>
+                </button>
+                
                 <Link href="/dashboard/profile">
                   <div 
                     className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"

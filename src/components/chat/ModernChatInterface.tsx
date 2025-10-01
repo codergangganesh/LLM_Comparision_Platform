@@ -1,33 +1,19 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Send, Settings, Plus, MessageSquare, Sparkles, Brain, BarChart3, ChevronDown, User, LogOut, Cog, Clock, Trash2 } from 'lucide-react'
+import { Send, Settings, Plus, MessageSquare, Sparkles, Brain, BarChart3, ChevronDown, User, LogOut, Cog, Clock, Trash2, CreditCard } from 'lucide-react'
 import { AVAILABLE_MODELS } from '@/lib/models'
 import { AIModel } from '@/types/app'
+import { ChatSession, ChatResponse } from '@/types/chat'
 import AIResponseCard from './AIResponseCard'
 import ModelSelector from './ModelSelector'
 import BlankComparisonPage from './BlankComparisonPage'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
+import { useDarkMode } from '@/contexts/DarkModeContext'
+import { usePopup } from '@/contexts/PopupContext'
+import { chatHistoryService } from '@/services/chatHistory.service'
 import DeleteAccountPopup from '../layout/DeleteAccountPopup'
-
-interface ChatResponse {
-  model: string
-  content: string
-  error?: string
-  success: boolean
-  responseTime?: number
-}
-
-interface ChatSession {
-  id: string
-  message: string
-  responses: ChatResponse[]
-  timestamp: Date
-  selectedModels: string[]
-  bestResponse?: string
-  responseTime?: number
-}
 
 interface ModernChatInterfaceProps {
   initialConversation?: any | null
@@ -35,7 +21,8 @@ interface ModernChatInterfaceProps {
 
 export default function ModernChatInterface({ initialConversation }: ModernChatInterfaceProps) {
   const { signOut, user } = useAuth()
-  const [darkMode] = useState(false) // Simplified dark mode
+  const { darkMode } = useDarkMode()
+  const { openPaymentPopup } = usePopup()
   const [message, setMessage] = useState('')
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([])
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
@@ -51,16 +38,16 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
   const profileDropdownRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Load chat sessions from localStorage on component mount
+  // Load chat sessions from API on component mount
   useEffect(() => {
-    const savedSessions = localStorage.getItem('aiFiestaChatSessions')
-    if (savedSessions) {
-      try {
-        const parsedSessions = JSON.parse(savedSessions)
-        // Convert timestamp strings back to Date objects
-        const sessionsWithDates: ChatSession[] = parsedSessions.map((session: any) => ({
+    const loadChatSessions = async () => {
+      // Try to load from API
+      const apiSessions = await chatHistoryService.getChatSessions()
+      if (apiSessions && apiSessions.length > 0) {
+        // Ensure timestamp is properly converted to Date objects
+        const sessionsWithDates: ChatSession[] = apiSessions.map((session: any) => ({
           ...session,
-          timestamp: new Date(session.timestamp),
+          timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
           selectedModels: session.selectedModels || []
         }))
         setChatSessions(sessionsWithDates)
@@ -68,28 +55,83 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
         // Set the most recent session as the current session
         if (sessionsWithDates.length > 0 && !currentSessionId) {
           const mostRecentSession = sessionsWithDates.reduce((latest: ChatSession, session: ChatSession) => 
-            session.timestamp > latest.timestamp ? session : latest,
+            new Date(session.timestamp) > new Date(latest.timestamp) ? session : latest,
             sessionsWithDates[0]
           )
           setCurrentSessionId(mostRecentSession.id)
         }
-      } catch (e) {
-        console.error('Failed to parse saved sessions:', e)
+        return
+      }
+      
+      // Fallback to localStorage if no API sessions
+      const savedSessions = localStorage.getItem('aiFiestaChatSessions')
+      if (savedSessions) {
+        try {
+          const parsedSessions = JSON.parse(savedSessions)
+          // Convert timestamp strings back to Date objects
+          const sessionsWithDates: ChatSession[] = parsedSessions.map((session: any) => ({
+            ...session,
+            timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
+            selectedModels: session.selectedModels || []
+          }))
+          setChatSessions(sessionsWithDates)
+          
+          // Set the most recent session as the current session
+          if (sessionsWithDates.length > 0 && !currentSessionId) {
+            const mostRecentSession = sessionsWithDates.reduce((latest: ChatSession, session: ChatSession) => 
+              new Date(session.timestamp) > new Date(latest.timestamp) ? session : latest,
+              sessionsWithDates[0]
+            )
+            setCurrentSessionId(mostRecentSession.id)
+          }
+        } catch (e) {
+          console.error('Failed to parse saved sessions:', e)
+        }
       }
     }
+
+    loadChatSessions()
   }, [])
 
-  // Save chat sessions to localStorage whenever they change
+  // Save chat sessions to API whenever they change
   useEffect(() => {
-    if (chatSessions.length > 0) {
-      // When saving, convert Date objects to strings
-      const sessionsToSave = chatSessions.map(session => ({
-        ...session,
-        timestamp: session.timestamp.toISOString(),
-        selectedModels: session.selectedModels
-      }))
-      localStorage.setItem('aiFiestaChatSessions', JSON.stringify(sessionsToSave))
+    const saveChatSessions = async () => {
+      if (chatSessions.length > 0) {
+        // Save the most recent session to API
+        const mostRecentSession = chatSessions.reduce((latest: ChatSession, session: ChatSession) => 
+          new Date(session.timestamp) > new Date(latest.timestamp) ? session : latest,
+          chatSessions[0]
+        )
+        
+        console.log('Attempting to save session to database:', JSON.stringify(mostRecentSession, null, 2));
+        const saveResult = await chatHistoryService.saveChatSession(mostRecentSession)
+        console.log('Database save result:', saveResult);
+        
+        if (!saveResult) {
+          console.warn('Failed to save to database, data will only be available locally');
+        }
+      }
+      
+      // Also save to localStorage for offline access
+      if (chatSessions.length > 0) {
+        // When saving, convert Date objects to strings
+        const sessionsToSave = chatSessions.map(session => {
+          // Ensure timestamp is a Date object before calling toISOString
+          const timestamp = session.timestamp instanceof Date 
+            ? session.timestamp 
+            : new Date(session.timestamp);
+            
+          return {
+            ...session,
+            timestamp: timestamp.toISOString(),
+            selectedModels: session.selectedModels
+          }
+        })
+        localStorage.setItem('aiFiestaChatSessions', JSON.stringify(sessionsToSave))
+      }
     }
+
+    saveChatSessions()
   }, [chatSessions])
 
   useEffect(() => {
@@ -175,7 +217,8 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
       const responseTime = (endTime - startTime) / 1000
 
       if (!response.ok) {
-        throw new Error('Failed to send message')
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(`HTTP ${response.status}: ${errorData.error || response.statusText}`)
       }
 
       const data = await response.json()
@@ -194,6 +237,15 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
       // Type the error properly
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error('Error sending message:', errorMessage)
+      
+      // Log more detailed error information
+      console.error('Full error details:', {
+        message: errorMessage,
+        timestamp: new Date().toISOString(),
+        selectedModels: selectedModels,
+        userMessage: currentMsg
+      })
+      
       const errorResponses = selectedModels.map(model => ({
         model,
         content: '',
@@ -450,6 +502,19 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
                       <span className="font-medium">Profile</span>
                     </div>
                   </Link>
+                  
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      openPaymentPopup();
+                    }}
+                    className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200 text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
+                      <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <span className="font-medium">Pricing Plans</span>
+                  </button>
                   
                   <Link href="/dashboard/settings">
                     <div 

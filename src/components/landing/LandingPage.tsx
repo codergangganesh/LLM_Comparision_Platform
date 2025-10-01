@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowRight, MessageSquare, Zap, BarChart3, Shield, Clock, Users, Brain, Sparkles, Star, ChevronRight, Play, Globe, TrendingUp, Award, Infinity, Cpu, Layers, GitBranch, Settings as SettingsIcon, LogOut, Moon, Sun, DollarSign, MessageCircle } from 'lucide-react'
+import { ArrowRight, MessageSquare, Zap, BarChart3, Shield, Clock, Users, Brain, Sparkles, Star, ChevronRight, Play, Globe, TrendingUp, Award, Infinity, Cpu, Layers, GitBranch, Settings as SettingsIcon, LogOut, Moon, Sun, DollarSign, MessageCircle, CreditCard } from 'lucide-react'
 import ModernModelShowcase from './ModernModelShowcase'
 import ModernFeedbackAndPricing from './ModernFeedbackAndPricing'
 import { useEffect, useState } from 'react'
@@ -278,10 +278,6 @@ export default function LandingPage() {
                     </span>
                   </button>
 
-                 
-
-                  
-
                   {/* Profile icon for logged-in users */}
                   <div className="flex items-center space-x-2">
                     {/* Dark mode toggle button */}
@@ -298,8 +294,7 @@ export default function LandingPage() {
 
                     <div className="relative group">
                       <div className={`w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold cursor-pointer transition-all duration-200 hover:scale-105 ${darkMode ? 'ring-2 ring-white/30' : ''
-                        }`}
-                      >
+                        }`}>
                         {profilePicture ? (
                           <img src={profilePicture} alt="Profile" className="w-full h-full rounded-full object-cover" />
                         ) : (
@@ -313,6 +308,18 @@ export default function LandingPage() {
                           ? 'bg-gray-800/90 border-gray-700/50 backdrop-blur-lg'
                           : 'bg-white/90 border-slate-200/50'
                         }`}>
+                        <button
+                          onClick={() => {
+                            openPaymentPopup();
+                          }}
+                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors w-full text-left ${darkMode
+                              ? 'text-gray-200 hover:bg-gray-700'
+                              : 'text-slate-700 hover:bg-slate-100'
+                            }`}
+                        >
+                          <CreditCard className="w-4 h-4" />
+                          <span>Pricing Plans</span>
+                        </button>
                         <Link
                           href="/chat"
                           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${darkMode
@@ -336,7 +343,6 @@ export default function LandingPage() {
                         <div className={`border-t my-2 ${darkMode ? 'border-gray-700/50' : 'border-slate-200/50'
                           }`}></div>
 
-                       
                         <button
                           onClick={handleSignOut}
                           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors w-full text-left ${darkMode
@@ -363,6 +369,25 @@ export default function LandingPage() {
                     aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
                   >
                     {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                  </button>
+
+                  {/* Pricing button for non-logged-in users */}
+                  <button
+                    onClick={openPaymentPopup}
+                    className="relative px-4 py-2 rounded-full font-bold transition-all duration-300 group overflow-hidden flex items-center space-x-2"
+                  >
+                    {/* Animated gradient background */}
+                    <div className="absolute inset-0 rounded-full">
+                      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+
+                    {/* Modern text styling */}
+                    <span className={`relative text-sm font-semibold bg-gradient-to-r ${darkMode
+                        ? 'from-gray-300 to-gray-100 group-hover:from-yellow-300 group-hover:to-yellow-100'
+                        : 'from-slate-700 to-slate-900 group-hover:from-yellow-600 group-hover:to-yellow-800'
+                      } bg-clip-text text-transparent transition-all duration-300`}>
+                      Pricing
+                    </span>
                   </button>
 
                   {/* Sign in button for non-logged-in users */}
@@ -925,7 +950,7 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-8">
             <Link
-              href={user ? "/compare" : "/auth"}
+              href={user ? "/chat" : "/auth"}
               className="group relative bg-white text-blue-600 px-8 py-4 rounded-2xl text-lg font-bold hover:shadow-2xl transition-all duration-200 hover:scale-105 flex items-center space-x-3 overflow-hidden"
             >
               {/* Animated background on hover */}
