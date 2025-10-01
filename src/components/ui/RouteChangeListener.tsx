@@ -9,17 +9,6 @@ export default function RouteChangeListener() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  useEffect(() => {
-    // Create a timeout to simulate loading
-    const timeout = setTimeout(() => {
-      setLoading(false)
-    }, 800)
-
-    return () => {
-      clearTimeout(timeout)
-    }
-  }, [pathname, searchParams])
-
   // Listen for route changes
   useEffect(() => {
     const handleRouteChangeStart = () => {
@@ -36,7 +25,7 @@ export default function RouteChangeListener() {
     // Simulate route change completion
     const timer = setTimeout(() => {
       handleRouteChangeComplete()
-    }, 600)
+    }, 800)
 
     return () => {
       clearTimeout(timer)

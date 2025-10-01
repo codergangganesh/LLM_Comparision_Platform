@@ -6,15 +6,20 @@ export async function GET(req: NextRequest) {
   console.log('GET /api/chat-sessions called');
   const supabase = createClient();
   
-  // Get user
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
-  if (authError || !user) {
-    console.error('GET - Unauthorized access attempt', { authError: authError?.message });
-    return new Response(JSON.stringify({ error: "Unauthorized", authError: authError?.message }), { status: 401 });
-  }
-  
   try {
+    // Get user with better error handling
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('GET - Authentication error:', authError.message);
+      return new Response(JSON.stringify({ error: "Unauthorized", authError: authError.message }), { status: 401 });
+    }
+    
+    if (!user) {
+      console.error('GET - No user found in session');
+      return new Response(JSON.stringify({ error: "Unauthorized", authError: "No user session found" }), { status: 401 });
+    }
+    
     console.log('GET - User authenticated:', user.id);
     
     const { data, error } = await supabase
@@ -52,15 +57,20 @@ export async function POST(req: NextRequest) {
   console.log('POST /api/chat-sessions called');
   const supabase = createClient();
   
-  // Get user
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
-  if (authError || !user) {
-    console.error('POST - Unauthorized access attempt', { authError: authError?.message });
-    return new Response(JSON.stringify({ error: "Unauthorized", authError: authError?.message }), { status: 401 });
-  }
-  
   try {
+    // Get user with better error handling
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('POST - Authentication error:', authError.message);
+      return new Response(JSON.stringify({ error: "Unauthorized", authError: authError.message }), { status: 401 });
+    }
+    
+    if (!user) {
+      console.error('POST - No user found in session');
+      return new Response(JSON.stringify({ error: "Unauthorized", authError: "No user session found" }), { status: 401 });
+    }
+    
     let session: ChatSession;
     try {
       session = await req.json();
@@ -181,46 +191,56 @@ export async function DELETE(req: NextRequest) {
   console.log('DELETE /api/chat-sessions called');
   const supabase = createClient();
   
-  // Get user
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  
-  if (authError || !user) {
-    console.error('DELETE - Unauthorized access attempt', { authError: authError?.message });
-    return new Response(JSON.stringify({ error: "Unauthorized", authError: authError?.message }), { status: 401 });
-  }
-  
   try {
-    let sessionId: string;
+    // Get user with better error handling
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('DELETE - Authentication error:', authError.message);
+      return new Response(JSON.stringify({ error: "Unauthorized", authError: authError.message }), { status: 401 });
+    }
+    
+    if (!user) {
+      console.error('DELETE - No user found in session');
+      return new Response(JSON.stringify({ error: "Unauthorized", authError: "No user session found" }), { status: 401 });
+    }
+    
     try {
-      const body = await req.json();
-      sessionId = body.sessionId;
-    } catch (parseError) {
-      console.error('DELETE - Invalid JSON in request body:', parseError);
-      return new Response(JSON.stringify({ error: "Invalid JSON in request body" }), { status: 400 });
-    }
-    
-    if (!sessionId) {
-      console.error('DELETE - Missing sessionId');
-      return new Response(JSON.stringify({ error: "Missing sessionId" }), { status: 400 });
-    }
-    
-    console.log('DELETE - Attempting to delete session:', { sessionId, user_id: user.id });
-    
-    const { error } = await supabase
-      .from('chat_sessions')
-      .delete()
-      .eq('id', sessionId)
-      .eq('user_id', user.id);
-    
-    if (error) {
-      console.error('DELETE - Database delete error:', error);
+      let sessionId: string;
+      try {
+        const body = await req.json();
+        sessionId = body.sessionId;
+      } catch (parseError) {
+        console.error('DELETE - Invalid JSON in request body:', parseError);
+        return new Response(JSON.stringify({ error: "Invalid JSON in request body" }), { status: 400 });
+      }
+      
+      if (!sessionId) {
+        console.error('DELETE - Missing sessionId');
+        return new Response(JSON.stringify({ error: "Missing sessionId" }), { status: 400 });
+      }
+      
+      console.log('DELETE - Attempting to delete session:', { sessionId, user_id: user.id });
+      
+      const { error } = await supabase
+        .from('chat_sessions')
+        .delete()
+        .eq('id', sessionId)
+        .eq('user_id', user.id);
+      
+      if (error) {
+        console.error('DELETE - Database delete error:', error);
+        return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+      }
+      
+      console.log('DELETE - Successfully deleted session:', sessionId);
+      return new Response(JSON.stringify({ success: true }), { status: 200 });
+    } catch (error: any) {
+      console.error('DELETE - Unexpected error:', error);
       return new Response(JSON.stringify({ error: error.message }), { status: 500 });
     }
-    
-    console.log('DELETE - Successfully deleted session:', sessionId);
-    return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (error: any) {
-    console.error('DELETE - Unexpected error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    console.error('DELETE - Authentication error:', error);
+    return new Response(JSON.stringify({ error: "Authentication failed", details: error.message }), { status: 401 });
   }
 }

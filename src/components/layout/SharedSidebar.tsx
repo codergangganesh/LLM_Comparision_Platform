@@ -3,8 +3,9 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
-import { MessageSquare, BarChart3, Brain, Plus, Clock, ChevronDown, User, LogOut, Cog, Trash2, CreditCard } from 'lucide-react'
+import { MessageSquare, BarChart3, Brain, Plus, Clock, ChevronDown, User, LogOut, Cog, Trash2, CreditCard, Moon, Sun } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import { useDarkMode } from '@/contexts/DarkModeContext'
 import DeleteAccountPopup from './DeleteAccountPopup'
 import { usePopup } from '@/contexts/PopupContext'
 
@@ -25,6 +26,7 @@ export default function SharedSidebar({
 }: SharedSidebarProps) {
   const { signOut, user } = useAuth()
   const { openPaymentPopup } = usePopup()
+  const { darkMode, toggleDarkMode } = useDarkMode()
   const pathname = usePathname()
   const [showProfileDropdown, setShowProfileDropdown] = useState(false)
   const [localShowDeletePopup, setLocalShowDeletePopup] = useState(false)
@@ -265,6 +267,36 @@ export default function SharedSidebar({
                     <span className="font-medium">Settings</span>
                   </div>
                 </Link>
+                
+                {/* Dark Mode Toggle */}
+                <div 
+                  className="flex items-center justify-between px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDarkMode();
+                    setShowProfileDropdown(false);
+                  }}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
+                      {darkMode ? (
+                        <Sun className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      ) : (
+                        <Moon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      )}
+                    </div>
+                    <span className="font-medium">Dark Mode</span>
+                  </div>
+                  <div className="relative">
+                    <div className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ${
+                      darkMode ? 'bg-indigo-600' : 'bg-gray-300'
+                    }`}>
+                      <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                        darkMode ? 'translate-x-6' : ''
+                      }`}></div>
+                    </div>
+                  </div>
+                </div>
                 
                 <div className="px-4 py-2">
                   <div className="h-px bg-slate-200/30 dark:bg-gray-700/50 my-1"></div>

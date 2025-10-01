@@ -118,7 +118,8 @@ export default function ProfilePage() {
     }`}>
       <AdvancedSidebar />
       
-      <div className="ml-16 lg:ml-72 transition-all duration-300">
+      {/* Adjusted layout to match chat interface with flex and responsive margins */}
+      <div className="lg:ml-80 ml-16 transition-all duration-300">
         <div className={`backdrop-blur-sm border-b transition-colors duration-200 ${
           darkMode 
             ? 'bg-gray-800/60 border-gray-700/30' 

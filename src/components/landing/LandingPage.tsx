@@ -188,7 +188,7 @@ export default function LandingPage() {
 
   return (
     <div className={`min-h-screen transition-colors duration-500 ${darkMode
-        ? 'bg-gradient-to-br from-gray-900 via-violet-900 to-black'
+        ? 'bg-black'
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'
       }`}>
       {/* Add the AllModelsOverlay component */}
@@ -340,6 +340,27 @@ export default function LandingPage() {
                           <SettingsIcon className="w-4 h-4" />
                           <span>Settings</span>
                         </Link>
+                        
+                        {/* Dark Mode Toggle */}
+                        <button
+                          onClick={() => {
+                            toggleDarkMode();
+                          }}
+                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors w-full text-left ${darkMode
+                              ? 'text-gray-200 hover:bg-gray-700'
+                              : 'text-slate-700 hover:bg-slate-100'
+                            }`}
+                        >
+                          <div className="flex items-center space-x-2">
+                            {darkMode ? (
+                              <Sun className="w-4 h-4 text-amber-400" />
+                            ) : (
+                              <Moon className="w-4 h-4 text-amber-600" />
+                            )}
+                            <span>{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                          </div>
+                        </button>
+                        
                         <div className={`border-t my-2 ${darkMode ? 'border-gray-700/50' : 'border-slate-200/50'
                           }`}></div>
 
@@ -913,7 +934,7 @@ export default function LandingPage() {
 
       {/* Enhanced CTA Section */}
       <section className={`py-24 relative overflow-hidden ${darkMode
-          ? 'bg-gradient-to-br from-violet-900 via-purple-900 to-black'
+          ? 'bg-black'
           : 'bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600'
         }`}>
         {/* Enhanced Background Pattern */}
@@ -1000,7 +1021,7 @@ export default function LandingPage() {
 
       {/* Enhanced Footer */}
       <footer className={`relative overflow-hidden ${darkMode
-          ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white'
+          ? 'bg-black text-white'
           : 'bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white'
         }`}>
         {/* Background pattern */}

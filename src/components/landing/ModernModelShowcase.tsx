@@ -34,7 +34,7 @@ export default function ModernModelShowcase() {
   return (
     <div className={`py-24 ${
       darkMode 
-        ? 'bg-gradient-to-br from-gray-900 to-gray-800' 
+        ? 'bg-black' 
         : 'bg-gradient-to-br from-white to-blue-50'
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -138,7 +138,7 @@ export default function ModernModelShowcase() {
                     <span className={
                       darkMode ? 'text-gray-300' : 'text-slate-600'
                     }>
-                      Speed: {model.speed || 'Medium'}
+                      Speed: Medium
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -148,7 +148,7 @@ export default function ModernModelShowcase() {
                     <span className={
                       darkMode ? 'text-gray-300' : 'text-slate-600'
                     }>
-                      Cost: {model.cost || 'Medium'}
+                      Cost: Medium
                     </span>
                   </div>
                 </div>

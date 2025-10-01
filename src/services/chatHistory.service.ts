@@ -1,10 +1,22 @@
 import { ChatSession } from '@/types/chat'
+import { createClient } from '@/utils/supabase/client'
 
 export class ChatHistoryService {
   async saveChatSession(session: ChatSession): Promise<boolean> {
     try {
+      // Create a Supabase client that can access the current session
+      const supabase = createClient()
+      
+      // Check if user is authenticated
+      const { data: { session: userSession }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError || !userSession) {
+        console.error('Error saving chat session - No valid session:', sessionError?.message || 'No session found')
+        return false
+      }
+      
       // Log the session data being sent
-      console.log('Saving chat session:', JSON.stringify(session, null, 2));
+      console.log('Saving chat session:', JSON.stringify(session, null, 2))
       
       const response = await fetch('/api/chat-sessions', {
         method: 'POST',
@@ -12,109 +24,131 @@ export class ChatHistoryService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(session),
-      });
+      })
 
-      console.log('Response status:', response.status);
-      console.log('Response headers:', [...response.headers.entries()]);
+      console.log('Response status:', response.status)
+      console.log('Response headers:', [...response.headers.entries()])
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error saving chat session - HTTP Status:', response.status);
-        console.error('Error saving chat session - Response text:', errorText);
+        const errorText = await response.text()
+        console.error('Error saving chat session - HTTP Status:', response.status)
+        console.error('Error saving chat session - Response text:', errorText)
         try {
           // Only try to parse as JSON if it looks like JSON
           if (errorText.trim().startsWith('{') && errorText.trim().endsWith('}')) {
-            const error = JSON.parse(errorText);
-            console.error('Error saving chat session - Parsed error:', error);
+            const error = JSON.parse(errorText)
+            console.error('Error saving chat session - Parsed error:', error)
           } else {
-            console.error('Error saving chat session - Non-JSON response:', errorText);
+            console.error('Error saving chat session - Non-JSON response:', errorText)
           }
         } catch (e) {
-          console.error('Error saving chat session - Could not parse error as JSON:', errorText);
+          console.error('Error saving chat session - Could not parse error as JSON:', errorText)
         }
-        return false;
+        return false
       }
 
-      const result = await response.json();
-      console.log('Successfully saved chat session:', result);
-      return true;
+      const result = await response.json()
+      console.log('Successfully saved chat session:', result)
+      return true
     } catch (error) {
-      console.error('Error saving chat session - Network error:', error);
-      return false;
+      console.error('Error saving chat session - Network error:', error)
+      return false
     }
   }
 
   async getChatSessions(): Promise<ChatSession[] | null> {
     try {
-      console.log('Fetching chat sessions');
-      const response = await fetch('/api/chat-sessions');
+      // Create a Supabase client that can access the current session
+      const supabase = createClient()
       
-      console.log('Response status:', response.status);
+      // Check if user is authenticated
+      const { data: { session: userSession }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError || !userSession) {
+        console.error('Error fetching chat sessions - No valid session:', sessionError?.message || 'No session found')
+        return null
+      }
+      
+      console.log('Fetching chat sessions')
+      const response = await fetch('/api/chat-sessions')
+      
+      console.log('Response status:', response.status)
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error fetching chat sessions - HTTP Status:', response.status);
-        console.error('Error fetching chat sessions - Response text:', errorText);
+        const errorText = await response.text()
+        console.error('Error fetching chat sessions - HTTP Status:', response.status)
+        console.error('Error fetching chat sessions - Response text:', errorText)
         try {
           // Only try to parse as JSON if it looks like JSON
           if (errorText.trim().startsWith('{') && errorText.trim().endsWith('}')) {
-            const error = JSON.parse(errorText);
-            console.error('Error fetching chat sessions - Parsed error:', error);
+            const error = JSON.parse(errorText)
+            console.error('Error fetching chat sessions - Parsed error:', error)
           } else {
-            console.error('Error fetching chat sessions - Non-JSON response:', errorText);
+            console.error('Error fetching chat sessions - Non-JSON response:', errorText)
           }
         } catch (e) {
-          console.error('Error fetching chat sessions - Could not parse error as JSON:', errorText);
+          console.error('Error fetching chat sessions - Could not parse error as JSON:', errorText)
         }
-        return null;
+        return null
       }
       
-      const chatSessions: ChatSession[] = await response.json();
-      console.log('Successfully fetched chat sessions:', chatSessions?.length || 0);
-      return chatSessions;
+      const chatSessions: ChatSession[] = await response.json()
+      console.log('Successfully fetched chat sessions:', chatSessions?.length || 0)
+      return chatSessions
     } catch (error) {
-      console.error('Error fetching chat sessions - Network error:', error);
-      return null;
+      console.error('Error fetching chat sessions - Network error:', error)
+      return null
     }
   }
 
   async deleteChatSession(sessionId: string): Promise<boolean> {
     try {
-      console.log('Deleting chat session:', sessionId);
+      // Create a Supabase client that can access the current session
+      const supabase = createClient()
+      
+      // Check if user is authenticated
+      const { data: { session: userSession }, error: sessionError } = await supabase.auth.getSession()
+      
+      if (sessionError || !userSession) {
+        console.error('Error deleting chat session - No valid session:', sessionError?.message || 'No session found')
+        return false
+      }
+      
+      console.log('Deleting chat session:', sessionId)
       const response = await fetch('/api/chat-sessions', {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ sessionId }),
-      });
+      })
 
-      console.log('Response status:', response.status);
+      console.log('Response status:', response.status)
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Error deleting chat session - HTTP Status:', response.status);
-        console.error('Error deleting chat session - Response text:', errorText);
+        const errorText = await response.text()
+        console.error('Error deleting chat session - HTTP Status:', response.status)
+        console.error('Error deleting chat session - Response text:', errorText)
         try {
           // Only try to parse as JSON if it looks like JSON
           if (errorText.trim().startsWith('{') && errorText.trim().endsWith('}')) {
-            const error = JSON.parse(errorText);
-            console.error('Error deleting chat session - Parsed error:', error);
+            const error = JSON.parse(errorText)
+            console.error('Error deleting chat session - Parsed error:', error)
           } else {
-            console.error('Error deleting chat session - Non-JSON response:', errorText);
+            console.error('Error deleting chat session - Non-JSON response:', errorText)
           }
         } catch (e) {
-          console.error('Error deleting chat session - Could not parse error as JSON:', errorText);
+          console.error('Error deleting chat session - Could not parse error as JSON:', errorText)
         }
-        return false;
+        return false
       }
 
-      const result = await response.json();
-      console.log('Successfully deleted chat session:', result);
-      return true;
+      const result = await response.json()
+      console.log('Successfully deleted chat session:', result)
+      return true
     } catch (error) {
-      console.error('Error deleting chat session - Network error:', error);
-      return false;
+      console.error('Error deleting chat session - Network error:', error)
+      return false
     }
   }
 }

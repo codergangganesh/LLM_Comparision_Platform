@@ -1,15 +1,17 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { ChevronDown, User, Settings, LogOut, Trash2, CreditCard } from 'lucide-react'
+import { ChevronDown, User, Settings, LogOut, Trash2, CreditCard, Moon, Sun } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePopup } from '@/contexts/PopupContext'
 import Link from 'next/link'
 import DeleteAccountPopup from './DeleteAccountPopup'
+import { useDarkMode } from '@/contexts/DarkModeContext'
 
 export default function SimpleProfileIcon() {
   const { signOut, user } = useAuth()
   const { openPaymentPopup } = usePopup()
+  const { darkMode, toggleDarkMode } = useDarkMode()
   const [isOpen, setIsOpen] = useState(false)
   const [showDeletePopup, setShowDeletePopup] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -152,6 +154,26 @@ export default function SimpleProfileIcon() {
                   <span className="font-medium">Settings</span>
                 </div>
               </Link>
+              
+              {/* Dark Mode Toggle */}
+              <div 
+                className="flex items-center justify-between px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
+                onClick={() => {
+                  setIsOpen(false);
+                  toggleDarkMode();
+                }}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
+                    {darkMode ? (
+                      <Sun className="w-4 h-4 text-amber-400" />
+                    ) : (
+                      <Moon className="w-4 h-4 text-amber-600" />
+                    )}
+                  </div>
+                  <span className="font-medium">{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                </div>
+              </div>
               
               <div className="px-4 py-2">
                 <div className="h-px bg-slate-200/30 dark:bg-gray-700/50 my-1"></div>

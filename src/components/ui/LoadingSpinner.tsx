@@ -22,7 +22,7 @@ export default function LoadingSpinner({
   }
 
   const colorClasses = {
-    primary: 'text-blue-500',
+    primary: 'text-violet-500',
     white: 'text-white',
     black: 'text-black'
   }
@@ -61,8 +61,17 @@ export default function LoadingSpinner({
 
   if (fullScreen) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm">
-        {spinner}
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-gradient-to-br from-black via-gray-900 to-black backdrop-blur-sm">
+        {/* Background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-violet-600/20 to-purple-600/20 rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-gradient-to-r from-purple-700/20 to-violet-700/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        </div>
+        
+        {/* Spinner content */}
+        <div className="relative z-10">
+          {spinner}
+        </div>
       </div>
     )
   }

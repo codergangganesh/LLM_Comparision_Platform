@@ -356,7 +356,7 @@ export default function AIResponseCard({
                 {/* Enhanced Scroll Indicator */}
                 {showScrollIndicator && !shouldShowPreview && (
                   <div className={`absolute bottom-0 left-0 right-0 h-8 scroll-indicator rounded-b-xl flex items-end justify-center pb-2 ${
-                    darkMode ? 'bg-gradient-to-t from-gray-700/80 to-transparent' : 'bg-gradient-to-t from-white/80 to-transparent'
+                    darkMode ? 'bg-black/80' : 'bg-gradient-to-t from-white/80 to-transparent'
                   }`}>
                     <div className={`flex items-center space-x-1 text-xs ${
                       darkMode ? 'text-slate-400 bg-gray-800/80' : 'text-slate-500 bg-white/80'

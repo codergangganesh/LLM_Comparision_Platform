@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown, CreditCard } from 'lucide-react'
+import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown, CreditCard, Moon, Sun } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePathname } from 'next/navigation'
@@ -21,7 +21,7 @@ interface ChatSession {
 export default function ModernHistoryInterface() {
   const { signOut, user } = useAuth()
   const pathname = usePathname()
-  const { darkMode } = useDarkMode()
+  const { darkMode, toggleDarkMode } = useDarkMode()
   const { openPaymentPopup } = usePopup()
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([])
   const [filteredSessions, setFilteredSessions] = useState<ChatSession[]>([])
@@ -138,7 +138,7 @@ export default function ModernHistoryInterface() {
   return (
     <div className={`flex h-screen transition-colors duration-200 ${
       darkMode 
-        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
+        ? 'bg-black' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'
     }`}>
       {/* Left Sidebar */}
@@ -362,6 +362,26 @@ export default function ModernHistoryInterface() {
                       <span className="font-medium">Settings</span>
                     </div>
                   </Link>
+                  
+                  {/* Dark Mode Toggle */}
+                  <div 
+                    className="flex items-center justify-between px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      toggleDarkMode();
+                    }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
+                        {darkMode ? (
+                          <Sun className="w-4 h-4 text-amber-400" />
+                        ) : (
+                          <Moon className="w-4 h-4 text-amber-600" />
+                        )}
+                      </div>
+                      <span className="font-medium">{darkMode ? 'Light Mode' : 'Dark Mode'}</span>
+                    </div>
+                  </div>
                   
                   <div className="px-4 py-2">
                     <div className="h-px bg-slate-200/30 dark:bg-gray-700/50 my-1"></div>

@@ -205,13 +205,13 @@ export default function DashboardPage() {
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
       darkMode 
-        ? 'bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900' 
+        ? 'bg-black' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'
     }`}>
       <AdvancedSidebar />
       
-      {/* Adjusted margin to accommodate the wider sidebar */}
-      <div className="ml-80 transition-all duration-300">
+      {/* Adjusted layout to match chat interface with flex and responsive margins */}
+      <div className="lg:ml-80 ml-16 transition-all duration-300">
         {/* Header */}
         <div className={`backdrop-blur-sm border-b transition-colors duration-200 ${
           darkMode 
