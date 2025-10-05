@@ -105,13 +105,13 @@ export default function ModernAuthForm() {
   }
 
   return (
-    <div className="w-full animate-fade-in">
+    <div className="w-full">
       {/* Form Header */}
-      <div className="text-center mb-8 animate-slide-in-top">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-violet-200 via-purple-100 to-fuchsia-200 bg-clip-text text-transparent mb-3 animate-text-glow">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold bg-gradient-to-r from-violet-200 via-purple-100 to-fuchsia-200 bg-clip-text text-transparent mb-3">
           {isLogin ? 'Welcome Back!' : 'Join AI Fiesta!'}
         </h2>
-        <p className="text-violet-300/80 animate-fade-in delay-100">
+        <p className="text-violet-300/80">
           {isLogin 
             ? 'Sign in to continue your AI journey'
             : 'Create your account and start comparing AI models'
@@ -123,20 +123,20 @@ export default function ModernAuthForm() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Success Message */}
         {successMessage && (
-          <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-200 px-4 py-3 rounded-xl text-sm backdrop-blur-sm animate-fade-in-down">
+          <div className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 text-green-200 px-4 py-3 rounded-xl text-sm backdrop-blur-sm">
             {successMessage}
           </div>
         )}
 
         {/* Error Message */}
         {error && (
-          <div className="bg-gradient-to-r from-red-500/20 to-violet-500/20 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl text-sm backdrop-blur-sm animate-shake">
+          <div className="bg-gradient-to-r from-red-500/20 to-violet-500/20 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl text-sm backdrop-blur-sm">
             {error}
           </div>
         )}
 
         {/* Email Field */}
-        <div className="animate-fade-in-up delay-200">
+        <div>
           <label className="block text-sm font-semibold text-violet-200 mb-2">
             Email
           </label>
@@ -151,13 +151,13 @@ export default function ModernAuthForm() {
               onChange={handleChange}
               placeholder="Enter your email"
               required
-              className="w-full pl-12 pr-4 py-4 bg-black/40 border border-violet-500/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all duration-200 text-violet-100 placeholder:text-violet-300/50 backdrop-blur-sm hover:bg-black/50 animate-border-glow"
+              className="w-full pl-12 pr-4 py-4 bg-black/40 border border-violet-500/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all duration-200 text-violet-100 placeholder:text-violet-300/50 backdrop-blur-sm hover:bg-black/50"
             />
           </div>
         </div>
 
         {/* Password Field */}
-        <div className="animate-fade-in-up delay-300">
+        <div>
           <label className="block text-sm font-semibold text-violet-200 mb-2">
             Password
           </label>
@@ -172,12 +172,12 @@ export default function ModernAuthForm() {
               onChange={handleChange}
               placeholder="Enter your password"
               required
-              className="w-full pl-12 pr-12 py-4 bg-black/40 border border-violet-500/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all duration-200 text-violet-100 placeholder:text-violet-300/50 backdrop-blur-sm hover:bg-black/50 animate-border-glow"
+              className="w-full pl-12 pr-12 py-4 bg-black/40 border border-violet-500/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all duration-200 text-violet-100 placeholder:text-violet-300/50 backdrop-blur-sm hover:bg-black/50"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-4 flex items-center text-violet-400 hover:text-violet-300 transition-colors duration-200"
+              className="absolute inset-y-0 right-0 pr-4 flex items-center text-violet-400 hover:text-violet-300"
             >
               {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
             </button>
@@ -186,7 +186,7 @@ export default function ModernAuthForm() {
 
         {/* Confirm Password Field - Only for Signup */}
         {!isLogin && (
-          <div className="animate-fade-in-up delay-400">
+          <div>
             <label className="block text-sm font-semibold text-violet-200 mb-2">
               Confirm Password
             </label>
@@ -201,7 +201,7 @@ export default function ModernAuthForm() {
                 onChange={handleChange}
                 placeholder="Confirm your password"
                 required
-                className="w-full pl-12 pr-4 py-4 bg-black/40 border border-violet-500/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all duration-200 text-violet-100 placeholder:text-violet-300/50 backdrop-blur-sm hover:bg-black/50 animate-border-glow"
+                className="w-full pl-12 pr-4 py-4 bg-black/40 border border-violet-500/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500 transition-all duration-200 text-violet-100 placeholder:text-violet-300/50 backdrop-blur-sm hover:bg-black/50"
               />
             </div>
           </div>
@@ -211,7 +211,7 @@ export default function ModernAuthForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-violet-500/30 transform hover:scale-[1.02] active:scale-[0.98] border border-violet-500/50 shadow-md animate-pulse-glow"
+          className="w-full flex items-center justify-center space-x-3 px-6 py-4 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white font-bold rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-violet-500/30 transform hover:scale-[1.02] active:scale-[0.98] border border-violet-500/50 shadow-md"
         >
           {loading ? (
             <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
@@ -224,7 +224,7 @@ export default function ModernAuthForm() {
         </button>
 
         {/* Divider */}
-        <div className="relative animate-fade-in delay-500">
+        <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-violet-500/20" />
           </div>
@@ -236,12 +236,12 @@ export default function ModernAuthForm() {
         </div>
 
         {/* Social Login Buttons */}
-        <div className="grid grid-cols-2 gap-4 animate-fade-in-up delay-600">
+        <div className="grid grid-cols-2 gap-4">
           <button
             type="button"
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="flex items-center justify-center space-x-2 px-4 py-3 bg-black/40 border border-violet-500/20 rounded-xl hover:bg-violet-900/20 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm group animate-border-glow"
+            className="flex items-center justify-center space-x-2 px-4 py-3 bg-black/40 border border-violet-500/20 rounded-xl hover:bg-violet-900/20 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm group"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -256,7 +256,7 @@ export default function ModernAuthForm() {
             type="button"
             onClick={handleGithubSignIn}
             disabled={loading}
-            className="flex items-center justify-center space-x-2 px-4 py-3 bg-black/40 border border-violet-500/20 rounded-xl hover:bg-violet-900/20 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm group animate-border-glow"
+            className="flex items-center justify-center space-x-2 px-4 py-3 bg-black/40 border border-violet-500/20 rounded-xl hover:bg-violet-900/20 transition-all duration-200 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm group"
           >
             <Github className="w-5 h-5 text-violet-300 group-hover:text-violet-200" />
             <span className="text-violet-200 font-medium group-hover:text-violet-100">GitHub</span>
@@ -264,7 +264,7 @@ export default function ModernAuthForm() {
         </div>
 
         {/* Toggle Login/Signup */}
-        <div className="text-center pt-4 animate-fade-in delay-700">
+        <div className="text-center pt-4">
           <p className="text-violet-300/80">
             {isLogin ? 'New to AI Fiesta? Join our community of learners and' : 'Already have an account?'}{' '}
             <button
@@ -274,188 +274,13 @@ export default function ModernAuthForm() {
                 setError('')
                 setSuccessMessage('')
               }}
-              className="text-violet-400 hover:text-violet-300 font-semibold hover:underline transition-colors duration-200 animate-text-glow"
+              className="text-violet-400 hover:text-violet-300 font-semibold hover:underline transition-colors duration-200"
             >
               {isLogin ? 'start your AI journey today!' : 'Sign in here'}
             </button>
           </p>
         </div>
       </form>
-      
-      {/* CSS Animations */}
-      <style jsx>{`
-        @keyframes fade-in {
-          0% {
-            opacity: 0;
-          }
-          100% {
-            opacity: 1;
-          }
-        }
-        
-        @keyframes slide-in-top {
-          0% {
-            opacity: 0;
-            transform: translateY(-20px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes fade-in-down {
-          0% {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes fade-in-up {
-          0% {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        
-        @keyframes slide-in-left {
-          0% {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        @keyframes slide-in-right {
-          0% {
-            opacity: 0;
-            transform: translateX(20px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-        
-        @keyframes pulse-glow {
-          0% {
-            box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
-          }
-          50% {
-            box-shadow: 0 0 15px rgba(139, 92, 246, 0.8);
-          }
-          100% {
-            box-shadow: 0 0 5px rgba(139, 92, 246, 0.5);
-          }
-        }
-        
-        @keyframes border-glow {
-          0% {
-            border-color: rgba(139, 92, 246, 0.2);
-          }
-          50% {
-            border-color: rgba(139, 92, 246, 0.5);
-          }
-          100% {
-            border-color: rgba(139, 92, 246, 0.2);
-          }
-        }
-        
-        @keyframes text-glow {
-          0% {
-            text-shadow: 0 0 2px rgba(139, 92, 246, 0.3);
-          }
-          50% {
-            text-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
-          }
-          100% {
-            text-shadow: 0 0 2px rgba(139, 92, 246, 0.3);
-          }
-        }
-        
-        @keyframes shake {
-          0%, 100% {
-            transform: translateX(0);
-          }
-          25% {
-            transform: translateX(-5px);
-          }
-          75% {
-            transform: translateX(5px);
-          }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.5s ease-out;
-        }
-        
-        .animate-slide-in-top {
-          animation: slide-in-top 0.6s ease-out;
-        }
-        
-        .animate-fade-in-down {
-          animation: fade-in-down 0.4s ease-out;
-        }
-        
-        .animate-fade-in-up {
-          animation: fade-in-up 0.5s ease-out forwards;
-        }
-        
-        .animate-pulse-glow {
-          animation: pulse-glow 2s ease-in-out infinite;
-        }
-        
-        .animate-border-glow {
-          animation: border-glow 2s ease-in-out infinite;
-        }
-        
-        .animate-text-glow {
-          animation: text-glow 2s ease-in-out infinite;
-        }
-        
-        .animate-shake {
-          animation: shake 0.5s ease-in-out;
-        }
-        
-        .delay-100 {
-          animation-delay: 0.1s;
-        }
-        
-        .delay-200 {
-          animation-delay: 0.2s;
-        }
-        
-        .delay-300 {
-          animation-delay: 0.3s;
-        }
-        
-        .delay-400 {
-          animation-delay: 0.4s;
-        }
-        
-        .delay-500 {
-          animation-delay: 0.5s;
-        }
-        
-        .delay-600 {
-          animation-delay: 0.6s;
-        }
-        
-        .delay-700 {
-          animation-delay: 0.7s;
-        }
-      `}</style>
     </div>
   )
 }

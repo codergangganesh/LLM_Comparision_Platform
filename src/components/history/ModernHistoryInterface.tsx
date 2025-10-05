@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown, CreditCard, Moon, Sun } from 'lucide-react'
+import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown, CreditCard, Moon, Sun, X } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePathname } from 'next/navigation'
@@ -9,6 +9,10 @@ import { useDarkMode } from '@/contexts/DarkModeContext'
 import { usePopup } from '@/contexts/PopupContext'
 import { chatHistoryService } from '@/services/chatHistory.service'
 import DeleteAccountPopup from '../layout/DeleteAccountPopup'
+import AIResponseCard from '../chat/AIResponseCard'
+import { AVAILABLE_MODELS } from '@/lib/models'
+import { AIModel } from '@/types/app'
+import { ChatResponse } from '@/types/chat'
 
 interface ChatSession {
   id: string
@@ -16,6 +20,9 @@ interface ChatSession {
   timestamp: Date
   selectedModels: string[]
   responseCount: number
+  responses?: ChatResponse[]
+  bestResponse?: string
+  responseTime?: number
 }
 
 export default function ModernHistoryInterface() {
@@ -30,6 +37,7 @@ export default function ModernHistoryInterface() {
   const [showDeletePopup, setShowDeletePopup] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [selectedSession, setSelectedSession] = useState<string | null>(null)
+  const [expandedSession, setExpandedSession] = useState<string | null>(null) // Add expanded session state
 
   const handleDeleteAccountConfirm = async (password: string) => {
     setIsDeleting(true)
@@ -121,6 +129,11 @@ export default function ModernHistoryInterface() {
         console.error('Failed to update localStorage:', e)
       }
     }
+    
+    // If the deleted session was expanded, close it
+    if (expandedSession === id) {
+      setExpandedSession(null)
+    }
   }
 
   const formatTimeAgo = (date: Date) => {
@@ -133,6 +146,27 @@ export default function ModernHistoryInterface() {
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     return `${Math.floor(seconds / 86400)}d ago`;
+  }
+
+  // Function to get model by ID
+  const getModelById = (modelId: string) => {
+    return AVAILABLE_MODELS.find(model => model.id === modelId)
+  }
+
+  // Function to convert our model type to the AIModel type expected by AIResponseCard
+  const convertToAIModel = (modelId: string) => {
+    const model = getModelById(modelId)
+    if (!model) return null
+    
+    const aiModel: AIModel = {
+      id: model.id,
+      displayName: model.label,
+      provider: model.provider,
+      description: model.description || '',
+      capabilities: model.capabilities || []
+    }
+    
+    return aiModel
   }
 
   return (
@@ -487,11 +521,11 @@ export default function ModernHistoryInterface() {
                   </Link>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="space-y-6">
                   {filteredSessions.map((session) => (
                     <div 
                       key={session.id}
-                      className={`rounded-2xl border transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer group ${
+                      className={`rounded-2xl border transition-all duration-200 ${
                         selectedSession === session.id
                           ? darkMode
                             ? 'border-blue-500 bg-blue-900/10'
@@ -500,9 +534,11 @@ export default function ModernHistoryInterface() {
                             ? 'bg-gray-800/30 border-gray-700/30 hover:border-gray-600/50'
                             : 'bg-white/30 border-slate-200/30 hover:border-slate-300/50'
                       }`}
-                      onClick={() => setSelectedSession(session.id === selectedSession ? null : session.id)}
                     >
-                      <div className="p-5">
+                      <div 
+                        className="p-5 cursor-pointer"
+                        onClick={() => setExpandedSession(expandedSession === session.id ? null : session.id)}
+                      >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center space-x-2">
                             <MessageSquare className={`w-5 h-5 ${
@@ -519,7 +555,7 @@ export default function ModernHistoryInterface() {
                               e.stopPropagation();
                               handleDeleteSession(session.id);
                             }}
-                            className={`p-1 rounded-lg transition-colors duration-200 opacity-0 group-hover:opacity-100 ${
+                            className={`p-1 rounded-lg transition-colors duration-200 ${
                               darkMode 
                                 ? 'text-gray-400 hover:text-red-400 hover:bg-gray-700' 
                                 : 'text-slate-400 hover:text-red-500 hover:bg-slate-100'
@@ -569,6 +605,97 @@ export default function ModernHistoryInterface() {
                           </div>
                         </div>
                       </div>
+                      
+                      {/* Expanded Session Content */}
+                      {expandedSession === session.id && (
+                        <div className={`border-t p-5 transition-all duration-300 ${
+                          darkMode ? 'border-gray-700/30' : 'border-slate-200/30'
+                        }`}>
+                          {/* Close button */}
+                          <div className="flex justify-end mb-4">
+                            <button
+                              onClick={() => setExpandedSession(null)}
+                              className={`p-2 rounded-lg transition-colors duration-200 ${
+                                darkMode 
+                                  ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                              }`}
+                              title="Close"
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </div>
+                          
+                          {/* User Message */}
+                          <div className={`mb-6 p-4 rounded-xl ${
+                            darkMode ? 'bg-gray-700/30' : 'bg-slate-50'
+                          }`}>
+                            <div className="flex items-start space-x-3">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                                darkMode ? 'bg-blue-900/50' : 'bg-blue-100'
+                              }`}>
+                                <span className={`font-bold text-sm ${
+                                  darkMode ? 'text-blue-300' : 'text-blue-700'
+                                }`}>U</span>
+                              </div>
+                              <div>
+                                <p className={`font-medium mb-1 ${
+                                  darkMode ? 'text-gray-300' : 'text-slate-700'
+                                }`}>Your Message</p>
+                                <p className={`${darkMode ? 'text-white' : 'text-slate-900'}`}>
+                                  {session.message}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* AI Responses */}
+                          {session.responses && session.responses.length > 0 ? (
+                            <div>
+                              <h4 className={`text-lg font-semibold mb-4 ${
+                                darkMode ? 'text-white' : 'text-slate-900'
+                              }`}>
+                                AI Responses
+                              </h4>
+                              <div className={`grid gap-6 ${
+                                session.selectedModels.length === 1 ? 'grid-cols-1 max-w-4xl' :
+                                session.selectedModels.length === 2 ? 'grid-cols-1 lg:grid-cols-2' :
+                                session.selectedModels.length === 3 ? 'grid-cols-1 lg:grid-cols-3' :
+                                session.selectedModels.length <= 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' :
+                                session.selectedModels.length <= 6 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' :
+                                'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                              }`}>
+                                {session.selectedModels.map((modelId) => {
+                                  const model = convertToAIModel(modelId)
+                                  const response = session.responses?.find((r: any) => r.model === modelId)
+                                  
+                                  if (!model) return null
+                                  
+                                  return (
+                                    <AIResponseCard
+                                      key={`${session.id}-${modelId}`}
+                                      model={model}
+                                      content={response?.content || ''}
+                                      loading={false}
+                                      error={response?.error}
+                                      isBestResponse={session.bestResponse === modelId}
+                                      responseTime={response?.responseTime}
+                                    />
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className={`text-center py-8 rounded-xl ${
+                              darkMode ? 'bg-gray-700/30' : 'bg-slate-50'
+                            }`}>
+                              <p className={darkMode ? 'text-gray-400' : 'text-slate-500'}>
+                                No responses found for this session.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

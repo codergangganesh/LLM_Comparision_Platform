@@ -6,7 +6,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { PopupProvider } from "@/contexts/PopupContext";
 import { LoadingProvider } from "@/contexts/LoadingContext";
-import RouteChangeListener from "@/components/ui/RouteChangeListener";
 import PricingPopup from "@/components/ui/PricingPopup";
 
 const geistSans = Geist({
@@ -39,7 +38,6 @@ export default function RootLayout({
             <NotificationProvider>
               <PopupProvider>
                 <LoadingProvider>
-                  <RouteChangeListener />
                   {children}
                   <PricingPopup />
                 </LoadingProvider>

@@ -16,11 +16,12 @@ interface User {
 interface AuthContextType {
   user: User | null
   loading: boolean
-  signIn: (email: string, password: string, showLoading?: (message: string) => void, hideLoading?: () => void) => Promise<{ error?: { message: string } }>
-  signInWithGoogle: (showLoading?: (message: string) => void) => Promise<void>
-  signInWithGithub: (showLoading?: (message: string) => void) => Promise<void>
-  signOut: (showLoading?: (message: string) => void, hideLoading?: () => void) => Promise<void>
-  signUp: (email: string, password: string, showLoading?: (message: string) => void, hideLoading?: () => void) => Promise<{ error?: { message: string } }>
+  signIn: (email: string, password: string, showLoading?: (message?: string) => void, hideLoading?: () => void) => Promise<{ error?: { message: string } }>
+  signInWithGoogle: (showLoading?: (message?: string) => void, hideLoading?: () => void) => Promise<void>
+  signInWithGithub: (showLoading?: (message?: string) => void, hideLoading?: () => void) => Promise<void>
+  signOut: (showLoading?: (message?: string) => void, hideLoading?: () => void) => Promise<void>
+  signUp: (email: string, password: string, showLoading?: (message?: string) => void, hideLoading?: () => void) => Promise<{ error?: { message: string } }>
+  deleteAccount: (password: string, showLoading?: (message?: string) => void, hideLoading?: () => void) => Promise<{ error?: { message: string } }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -63,16 +64,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signIn = async (email: string, password: string, showLoading?: (message: string) => void, hideLoading?: () => void) => {
+  const signIn = async (email: string, password: string, showLoadingFn?: (message?: string) => void, hideLoadingFn?: () => void) => {
     try {
-      if (showLoading) showLoading('Signing in...')
+      if (showLoadingFn) {
+        showLoadingFn('Signing in...')
+      }
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
       
       if (error) {
-        if (hideLoading) hideLoading()
+        if (hideLoadingFn) {
+          hideLoadingFn()
+        }
         return { error }
       }
       
@@ -83,18 +88,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push('/')
       }
       
-      if (hideLoading) hideLoading()
+      if (hideLoadingFn) {
+        hideLoadingFn()
+      }
       return { error: undefined }
     } catch (error) {
-      if (hideLoading) hideLoading()
+      if (hideLoadingFn) {
+        hideLoadingFn()
+      }
       console.error('Sign in error:', error)
       return { error: { message: 'An unexpected error occurred' } }
     }
   }
 
-  const signInWithGoogle = async (showLoading?: (message: string) => void) => {
+  const signInWithGoogle = async (showLoadingFn?: (message?: string) => void, hideLoadingFn?: () => void) => {
     try {
-      if (showLoading) showLoading('Redirecting to Google...')
+      if (showLoadingFn) {
+        showLoadingFn('Redirecting to Google...')
+      }
       // Only run on client side
       if (typeof window !== 'undefined') {
         await supabase.auth.signInWithOAuth({
@@ -105,13 +116,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
       }
     } catch (error) {
+      if (hideLoadingFn) {
+        hideLoadingFn()
+      }
       console.error('Google sign in error:', error)
     }
   }
 
-  const signInWithGithub = async (showLoading?: (message: string) => void) => {
+  const signInWithGithub = async (showLoadingFn?: (message?: string) => void, hideLoadingFn?: () => void) => {
     try {
-      if (showLoading) showLoading('Redirecting to GitHub...')
+      if (showLoadingFn) {
+        showLoadingFn('Redirecting to GitHub...')
+      }
       // Only run on client side
       if (typeof window !== 'undefined') {
         await supabase.auth.signInWithOAuth({
@@ -122,26 +138,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         })
       }
     } catch (error) {
+      if (hideLoadingFn) {
+        hideLoadingFn()
+      }
       console.error('GitHub sign in error:', error)
     }
   }
 
-  const signOut = async (showLoading?: (message: string) => void, hideLoading?: () => void) => {
+  const signOut = async (showLoadingFn?: (message?: string) => void, hideLoadingFn?: () => void) => {
     try {
-      if (showLoading) showLoading('Signing out...')
+      if (showLoadingFn) {
+        showLoadingFn('Signing out...')
+      }
       await supabase.auth.signOut()
       setUser(null)
       router.push('/')
-      if (hideLoading) hideLoading()
+      if (hideLoadingFn) {
+        hideLoadingFn()
+      }
     } catch (error) {
-      if (hideLoading) hideLoading()
+      if (hideLoadingFn) {
+        hideLoadingFn()
+      }
       console.error('Sign out error:', error)
     }
   }
 
-  const signUp = async (email: string, password: string, showLoading?: (message: string) => void, hideLoading?: () => void) => {
+  const signUp = async (email: string, password: string, showLoadingFn?: (message?: string) => void, hideLoadingFn?: () => void) => {
     try {
-      if (showLoading) showLoading('Creating account...')
+      if (showLoadingFn) {
+        showLoadingFn('Creating account...')
+      }
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -151,7 +178,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       
       if (error) {
-        if (hideLoading) hideLoading()
+        if (hideLoadingFn) {
+          hideLoadingFn()
+        }
         return { error }
       }
       
@@ -163,12 +192,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         router.push('/auth')
       }
       
-      if (hideLoading) hideLoading()
+      if (hideLoadingFn) {
+        hideLoadingFn()
+      }
       return { error: undefined }
     } catch (error) {
-      if (hideLoading) hideLoading()
+      if (hideLoadingFn) {
+        hideLoadingFn()
+      }
       console.error('Sign up error:', error)
       return { error: { message: 'An unexpected error occurred' } }
+    }
+  }
+
+  const deleteAccount = async (password: string, showLoadingFn?: (message?: string) => void, hideLoadingFn?: () => void) => {
+    try {
+      if (showLoadingFn) {
+        showLoadingFn('Deleting account...')
+      }
+      
+      // First, re-authenticate the user with their password
+      const { data: { user: authUser }, error: signInError } = await supabase.auth.signInWithPassword({
+        email: user?.email || '',
+        password,
+      })
+      
+      if (signInError) {
+        if (hideLoadingFn) {
+          hideLoadingFn()
+        }
+        return { error: { message: 'Incorrect password. Please try again.' } }
+      }
+      
+      if (!authUser) {
+        if (hideLoadingFn) {
+          hideLoadingFn()
+        }
+        return { error: { message: 'Failed to authenticate user.' } }
+      }
+      
+      // Delete the user
+      const { error } = await supabase.auth.admin.deleteUser(authUser.id)
+      
+      if (error) {
+        if (hideLoadingFn) {
+          hideLoadingFn()
+        }
+        return { error: { message: 'Failed to delete account. Please try again.' } }
+      }
+      
+      // Sign out and clear local user data
+      await supabase.auth.signOut()
+      setUser(null)
+      if (hideLoadingFn) {
+        hideLoadingFn()
+      }
+      
+      return { error: undefined }
+    } catch (error) {
+      if (hideLoadingFn) {
+        hideLoadingFn()
+      }
+      console.error('Delete account error:', error)
+      return { error: { message: 'An unexpected error occurred. Please try again.' } }
     }
   }
 
@@ -179,7 +265,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithGoogle,
     signInWithGithub,
     signOut,
-    signUp
+    signUp,
+    deleteAccount
   }
 
   return (
