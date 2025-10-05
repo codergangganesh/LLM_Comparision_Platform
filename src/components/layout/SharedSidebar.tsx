@@ -219,7 +219,7 @@ export default function SharedSidebar({
                       <div className="font-semibold text-slate-900 dark:text-white truncate">
                         {user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')}
                       </div>
-                      <div className="text-xs text-slate-500 dark:text-gray-400 truncate">
+                      <div className="text-xs text-slate-500 dark:text-gray-300 truncate">
                         {user?.email || 'user@example.com'}
                       </div>
                     </div>

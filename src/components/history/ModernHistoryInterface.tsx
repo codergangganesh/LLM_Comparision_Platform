@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown, CreditCard, Moon, Sun, X } from 'lucide-react'
+import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown, CreditCard, Moon, Sun, X, Filter, SortDesc, Calendar, ArrowUpDown } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePathname } from 'next/navigation'
@@ -37,7 +37,12 @@ export default function ModernHistoryInterface() {
   const [showDeletePopup, setShowDeletePopup] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [selectedSession, setSelectedSession] = useState<string | null>(null)
-  const [expandedSession, setExpandedSession] = useState<string | null>(null) // Add expanded session state
+  const [expandedSession, setExpandedSession] = useState<string | null>(null)
+  // New state for sort and filter
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'mostResponses'>('newest')
+  const [filterByModel, setFilterByModel] = useState<string>('all')
+  const [showDeleteAllPopup, setShowDeleteAllPopup] = useState(false)
+  const [showSortFilterDropdown, setShowSortFilterDropdown] = useState(false)
 
   const handleDeleteAccountConfirm = async (password: string) => {
     setIsDeleting(true)
@@ -96,18 +101,40 @@ export default function ModernHistoryInterface() {
     loadChatSessions()
   }, [])
 
-  // Filter sessions based on search term
+  // Filter and sort sessions based on search term, sort, and filter options
   useEffect(() => {
-    if (!searchTerm) {
-      setFilteredSessions(chatSessions)
-    } else {
-      const filtered = chatSessions.filter(session => 
+    let result = [...chatSessions]
+    
+    // Apply search filter
+    if (searchTerm) {
+      result = result.filter(session => 
         session.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
         session.selectedModels.some(model => model.toLowerCase().includes(searchTerm.toLowerCase()))
       )
-      setFilteredSessions(filtered)
     }
-  }, [searchTerm, chatSessions])
+    
+    // Apply model filter
+    if (filterByModel !== 'all') {
+      result = result.filter(session => 
+        session.selectedModels.includes(filterByModel)
+      )
+    }
+    
+    // Apply sorting
+    switch (sortBy) {
+      case 'newest':
+        result.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        break
+      case 'oldest':
+        result.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+        break
+      case 'mostResponses':
+        result.sort((a, b) => b.responseCount - a.responseCount)
+        break
+    }
+    
+    setFilteredSessions(result)
+  }, [searchTerm, sortBy, filterByModel, chatSessions])
 
   const handleDeleteSession = async (id: string) => {
     // Delete from API
@@ -134,6 +161,26 @@ export default function ModernHistoryInterface() {
     if (expandedSession === id) {
       setExpandedSession(null)
     }
+  }
+
+  const handleDeleteAllSessions = async () => {
+    // Delete all sessions from API
+    for (const session of chatSessions) {
+      await chatHistoryService.deleteChatSession(session.id)
+    }
+    
+    // Clear local state
+    setChatSessions([])
+    setFilteredSessions([])
+    
+    // Clear localStorage
+    localStorage.removeItem('aiFiestaChatSessions')
+    
+    // Close expanded session if any
+    setExpandedSession(null)
+    
+    // Close the delete all popup
+    setShowDeleteAllPopup(false)
   }
 
   const formatTimeAgo = (date: Date) => {
@@ -167,6 +214,15 @@ export default function ModernHistoryInterface() {
     }
     
     return aiModel
+  }
+
+  // Get unique models for filter dropdown
+  const getUniqueModels = () => {
+    const models = new Set<string>()
+    chatSessions.forEach(session => {
+      session.selectedModels.forEach(model => models.add(model))
+    })
+    return Array.from(models)
   }
 
   return (
@@ -469,22 +525,184 @@ export default function ModernHistoryInterface() {
               Chat History
             </h1>
             
-            {/* Search Bar */}
-            <div className="relative max-w-md">
-              <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-200 ${
-                darkMode ? 'text-gray-400' : 'text-slate-400'
-              }`} />
-              <input
-                type="text"
-                placeholder="Search history..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all duration-200 text-sm placeholder:text-slate-500 ${
-                  darkMode 
-                    ? 'bg-gray-700/50 border border-gray-600/50 text-white placeholder:text-gray-400 hover:bg-gray-700/70' 
-                    : 'bg-white border border-slate-200/50 text-slate-900 hover:border-slate-300/50'
-                }`}
-              />
+            {/* Controls Bar */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              {/* Search Bar */}
+              <div className="relative max-w-md flex-1">
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-200 ${
+                  darkMode ? 'text-gray-400' : 'text-slate-400'
+                }`} />
+                <input
+                  type="text"
+                  placeholder="Search history..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all duration-200 text-sm placeholder:text-slate-500 ${
+                    darkMode 
+                      ? 'bg-gray-700/50 border border-gray-600/50 text-white placeholder:text-gray-400 hover:bg-gray-700/70' 
+                      : 'bg-white border border-slate-200/50 text-slate-900 hover:border-slate-300/50'
+                  }`}
+                />
+              </div>
+              
+              {/* Sort and Filter Controls */}
+              <div className="flex items-center space-x-3">
+                {/* Delete All Button - Only show when there are sessions */}
+                {chatSessions.length > 0 && (
+                  <button
+                    onClick={() => setShowDeleteAllPopup(true)}
+                    className={`p-3 rounded-xl transition-colors duration-200 ${
+                      darkMode 
+                        ? 'text-gray-400 hover:text-red-400 hover:bg-gray-700' 
+                        : 'text-slate-400 hover:text-red-500 hover:bg-slate-100'
+                    }`}
+                    title="Delete all history"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                )}
+                
+                {/* Sort and Filter Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowSortFilterDropdown(!showSortFilterDropdown)}
+                    className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all duration-200 ${
+                      darkMode 
+                        ? 'bg-gray-700/50 border border-gray-600/50 text-gray-300 hover:bg-gray-700/70' 
+                        : 'bg-white border border-slate-200/50 text-slate-700 hover:border-slate-300/50'
+                    }`}
+                  >
+                    <Filter className="w-4 h-4" />
+                    <span className="hidden sm:inline">Sort & Filter</span>
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                  
+                  {/* Sort and Filter Dropdown Menu */}
+                  {showSortFilterDropdown && (
+                    <div className={`absolute right-0 mt-2 w-64 rounded-xl border shadow-xl z-20 overflow-hidden ${
+                      darkMode 
+                        ? 'bg-gray-800/95 border-gray-700/50 backdrop-blur-xl' 
+                        : 'bg-white/95 border-slate-200/50 backdrop-blur-xl'
+                    }`}>
+                      <div className="py-2">
+                        {/* Sort Options */}
+                        <div className="px-4 py-2">
+                          <h3 className={`text-sm font-semibold mb-2 ${
+                            darkMode ? 'text-gray-300' : 'text-slate-700'
+                          }`}>
+                            Sort By
+                          </h3>
+                          <div className="space-y-1">
+                            <button
+                              onClick={() => {
+                                setSortBy('newest')
+                                setShowSortFilterDropdown(false)
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
+                                sortBy === 'newest'
+                                  ? darkMode 
+                                    ? 'bg-blue-900/30 text-blue-300' 
+                                    : 'bg-blue-100 text-blue-700'
+                                  : darkMode 
+                                    ? 'text-gray-300 hover:bg-gray-700/50' 
+                                    : 'text-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              Newest First
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSortBy('oldest')
+                                setShowSortFilterDropdown(false)
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
+                                sortBy === 'oldest'
+                                  ? darkMode 
+                                    ? 'bg-blue-900/30 text-blue-300' 
+                                    : 'bg-blue-100 text-blue-700'
+                                  : darkMode 
+                                    ? 'text-gray-300 hover:bg-gray-700/50' 
+                                    : 'text-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              Oldest First
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSortBy('mostResponses')
+                                setShowSortFilterDropdown(false)
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
+                                sortBy === 'mostResponses'
+                                  ? darkMode 
+                                    ? 'bg-blue-900/30 text-blue-300' 
+                                    : 'bg-blue-100 text-blue-700'
+                                  : darkMode 
+                                    ? 'text-gray-300 hover:bg-gray-700/50' 
+                                    : 'text-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              Most Responses
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className={`px-4 py-2 border-t ${
+                          darkMode ? 'border-gray-700/50' : 'border-slate-200/50'
+                        }`}>
+                          <h3 className={`text-sm font-semibold mb-2 ${
+                            darkMode ? 'text-gray-300' : 'text-slate-700'
+                          }`}>
+                            Filter By Model
+                          </h3>
+                          <div className="space-y-1">
+                            <button
+                              onClick={() => {
+                                setFilterByModel('all')
+                                setShowSortFilterDropdown(false)
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
+                                filterByModel === 'all'
+                                  ? darkMode 
+                                    ? 'bg-blue-900/30 text-blue-300' 
+                                    : 'bg-blue-100 text-blue-700'
+                                  : darkMode 
+                                    ? 'text-gray-300 hover:bg-gray-700/50' 
+                                    : 'text-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              All Models
+                            </button>
+                            {getUniqueModels().map(modelId => {
+                              const model = getModelById(modelId)
+                              return (
+                                <button
+                                  key={modelId}
+                                  onClick={() => {
+                                    setFilterByModel(modelId)
+                                    setShowSortFilterDropdown(false)
+                                  }}
+                                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
+                                    filterByModel === modelId
+                                      ? darkMode 
+                                        ? 'bg-blue-900/30 text-blue-300' 
+                                        : 'bg-blue-100 text-blue-700'
+                                      : darkMode 
+                                        ? 'text-gray-300 hover:bg-gray-700/50' 
+                                        : 'text-slate-700 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  {model?.provider || modelId}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -505,13 +723,13 @@ export default function ModernHistoryInterface() {
                   <h2 className={`text-2xl font-bold mb-2 transition-colors duration-200 ${
                     darkMode ? 'text-white' : 'text-slate-900'
                   }`}>
-                    {searchTerm ? 'No matching conversations' : 'No conversation history'}
+                    {searchTerm || filterByModel !== 'all' ? 'No matching conversations' : 'No conversation history'}
                   </h2>
                   <p className={`text-lg mb-8 text-center max-w-md transition-colors duration-200 ${
                     darkMode ? 'text-gray-400' : 'text-slate-600'
                   }`}>
-                    {searchTerm 
-                      ? 'Try adjusting your search terms' 
+                    {searchTerm || filterByModel !== 'all'
+                      ? 'Try adjusting your search terms or filters' 
                       : 'Start a new conversation to see it appear here'}
                   </p>
                   <Link href="/chat">
@@ -574,18 +792,21 @@ export default function ModernHistoryInterface() {
                         
                         <div className="flex items-center justify-between">
                           <div className="flex flex-wrap gap-2">
-                            {session.selectedModels.slice(0, 3).map((model, index) => (
-                              <span 
-                                key={index}
-                                className={`text-xs px-2 py-1 rounded-full ${
-                                  darkMode 
-                                    ? 'bg-gray-700 text-gray-300' 
-                                    : 'bg-slate-100 text-slate-700'
-                                }`}
-                              >
-                                {model}
-                              </span>
-                            ))}
+                            {session.selectedModels.slice(0, 3).map((modelId) => {
+                              const model = getModelById(modelId)
+                              return (
+                                <span 
+                                  key={modelId}
+                                  className={`text-xs px-2 py-1 rounded-full ${
+                                    darkMode 
+                                      ? 'bg-gray-700 text-gray-300' 
+                                      : 'bg-slate-100 text-slate-700'
+                                  }`}
+                                >
+                                  {model?.provider || modelId}
+                                </span>
+                              )
+                            })}
                             {session.selectedModels.length > 3 && (
                               <span className={`text-xs px-2 py-1 rounded-full ${
                                 darkMode 
@@ -704,6 +925,62 @@ export default function ModernHistoryInterface() {
           </div>
         </div>
       </div>
+      
+      {/* Delete All Confirmation Popup */}
+      {showDeleteAllPopup && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`rounded-2xl border shadow-xl max-w-md w-full ${
+            darkMode 
+              ? 'bg-gray-800 border-gray-700' 
+              : 'bg-white border-slate-200'
+          }`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-xl font-bold ${
+                  darkMode ? 'text-white' : 'text-slate-900'
+                }`}>
+                  Delete All History
+                </h3>
+                <button
+                  onClick={() => setShowDeleteAllPopup(false)}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${
+                    darkMode 
+                      ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                      : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <p className={`mb-6 ${
+                darkMode ? 'text-gray-300' : 'text-slate-600'
+              }`}>
+                Are you sure you want to delete all chat history? This action cannot be undone.
+              </p>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setShowDeleteAllPopup(false)}
+                  className={`px-4 py-2 rounded-xl font-medium transition-colors duration-200 ${
+                    darkMode 
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAllSessions}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors duration-200"
+                >
+                  Delete All
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       <DeleteAccountPopup
         isOpen={showDeletePopup}

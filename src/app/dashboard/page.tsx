@@ -92,6 +92,95 @@ export default function DashboardPage() {
   
   const [isExportOpen, setIsExportOpen] = useState(false)
   
+  // Function to generate dashboard data for export
+  const generateDashboardData = () => {
+    return {
+      metrics: metrics,
+      usageData: usageData,
+      userPlan: userPlan,
+      exportDate: new Date().toISOString(),
+      userId: user?.id
+    }
+  }
+  
+  // Function to export data as JSON
+  const exportToJSON = () => {
+    const data = generateDashboardData()
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `dashboard-data-${new Date().toISOString().slice(0, 10)}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    setIsExportOpen(false)
+  }
+  
+  // Function to export data as CSV
+  const exportToCSV = () => {
+    const data = generateDashboardData()
+    let csvContent = 'Dashboard Data Export\n'
+    csvContent += `Export Date: ${data.exportDate}\n\n`
+    
+    // Metrics data
+    csvContent += 'Metrics:\n'
+    csvContent += 'Title,Value,Change,Trend\n'
+    data.metrics.forEach(metric => {
+      csvContent += `${metric.title},${metric.value},${metric.change},${metric.trend}\n`
+    })
+    
+    csvContent += '\nUsage Data:\n'
+    csvContent += `API Calls,${data.usageData.apiCalls}\n`
+    csvContent += `Comparisons,${data.usageData.comparisons}\n`
+    csvContent += `Storage,${data.usageData.storage}\n`
+    
+    csvContent += `\nUser Plan,${data.userPlan}\n`
+    
+    const blob = new Blob([csvContent], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `dashboard-data-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    setIsExportOpen(false)
+  }
+  
+  // Function to export data as PDF
+  const exportToPDF = () => {
+    const data = generateDashboardData()
+    let pdfContent = `Dashboard Data Export\n\n`
+    pdfContent += `Export Date: ${new Date(data.exportDate).toLocaleString()}\n\n`
+    
+    // Metrics data
+    pdfContent += `Metrics:\n`
+    data.metrics.forEach(metric => {
+      pdfContent += `- ${metric.title}: ${metric.value} (${metric.change} ${metric.trend})\n`
+    })
+    
+    pdfContent += `\nUsage Data:\n`
+    pdfContent += `- API Calls: ${data.usageData.apiCalls}\n`
+    pdfContent += `- Comparisons: ${data.usageData.comparisons}\n`
+    pdfContent += `- Storage: ${data.usageData.storage} GB\n`
+    
+    pdfContent += `\nUser Plan: ${data.userPlan}\n`
+    
+    const blob = new Blob([pdfContent], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `dashboard-data-${new Date().toISOString().slice(0, 10)}.pdf`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    setIsExportOpen(false)
+  }
+  
   // Mock data for charts
   const responseTimeData = [
     { name: 'GPT-4', value: 2.3, color: '#3B82F6' },
@@ -274,7 +363,7 @@ export default function DashboardPage() {
                           </h3>
                         </div>
                         <button
-                          onClick={() => setIsExportOpen(false)}
+                          onClick={exportToJSON}
                           className={`w-full text-left px-4 py-3 text-sm transition-colors duration-200 flex items-center justify-between ${
                             darkMode 
                               ? 'hover:bg-gray-700/50 text-gray-300 hover:text-white' 
@@ -293,7 +382,7 @@ export default function DashboardPage() {
                           </div>
                         </button>
                         <button
-                          onClick={() => setIsExportOpen(false)}
+                          onClick={exportToCSV}
                           className={`w-full text-left px-4 py-3 text-sm transition-colors duration-200 flex items-center justify-between ${
                             darkMode 
                               ? 'hover:bg-gray-700/50 text-gray-300 hover:text-white' 
@@ -312,7 +401,7 @@ export default function DashboardPage() {
                           </div>
                         </button>
                         <button
-                          onClick={() => setIsExportOpen(false)}
+                          onClick={exportToPDF}
                           className={`w-full text-left px-4 py-3 text-sm transition-colors duration-200 flex items-center justify-between ${
                             darkMode 
                               ? 'hover:bg-gray-700/50 text-gray-300 hover:text-white' 
