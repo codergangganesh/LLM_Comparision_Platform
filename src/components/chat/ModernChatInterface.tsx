@@ -7,13 +7,13 @@ import { AIModel } from '@/types/app'
 import { ChatSession, ChatResponse } from '@/types/chat'
 import AIResponseCard from './AIResponseCard'
 import ModelSelector from './ModelSelector'
-import BlankComparisonPage from './BlankComparisonPage'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
 import { usePopup } from '@/contexts/PopupContext'
 import { chatHistoryService } from '@/services/chatHistory.service'
 import DeleteAccountPopup from '../layout/DeleteAccountPopup'
+import BlankComparisonPage from './BlankComparisonPage'
 
 interface ModernChatInterfaceProps {
   initialConversation?: any | null
@@ -37,6 +37,22 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
   const [isDeleting, setIsDeleting] = useState(false)
   const profileDropdownRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Suggested prompts for the chat interface
+  const suggestedPrompts = [
+    "Explain quantum computing in simple terms",
+    "Write a creative story about time travel",
+    "Compare the benefits of renewable energy sources",
+    "Create a business plan for a tech startup"
+  ]
+
+  // Popular prompts based on user interactions
+  const popularPrompts = [
+    "How does machine learning work?",
+    "Write a business proposal for sustainable energy",
+    "Explain blockchain technology simply",
+    "Create a workout plan for beginners"
+  ]
 
   // Load chat sessions from API on component mount
   useEffect(() => {
@@ -161,11 +177,14 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
     setMessage('')
   }
 
-  const startNewComparison = () => {
+  const startNewComparison = (initialMessage?: string) => {
     setChatSessions([])
     setCurrentSessionId(null)
     localStorage.removeItem('aiFiestaChatSessions')
     setShowBlankPage(false)
+    if (initialMessage) {
+      setMessage(initialMessage)
+    }
   }
 
   const handleModelToggle = (modelId: string) => {
@@ -223,12 +242,23 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
 
       const data = await response.json()
       
+      // Fix: Ensure we're accessing the correct data structure
+      const results = data.results || []
+      
+      // Process responses to match ChatResponse structure
+      const processedResponses: ChatResponse[] = results.map((result: any) => ({
+        model: result.model,
+        content: result.content || '',
+        error: result.error,
+        success: !result.error
+      }))
+      
       // Update session with responses and response time
       setChatSessions(prev => prev.map(session => 
         session.id === newSessionId 
           ? { 
               ...session, 
-              responses: data.results,
+              responses: processedResponses,
               responseTime: data.responseTime || responseTime
             } 
           : session
@@ -784,12 +814,44 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
                   Click "New Comparison" to begin.
                 </p>
                 
-                <button
-                  onClick={startNewComparison}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  Start New Comparison
-                </button>
+                {/* Suggested Prompts Section */}
+                <div className="mb-8">
+                  <h3 className={`text-lg font-semibold mb-4 text-left ${
+                    darkMode ? 'text-gray-200' : 'text-slate-800'
+                  }`}>
+                    Try these prompts:
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {suggestedPrompts.map((prompt, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setMessage(prompt)}
+                        className={`p-4 text-left rounded-xl transition-all duration-200 hover:scale-[1.02] group ${
+                          darkMode 
+                            ? 'bg-gray-800/50 hover:bg-gray-700/70 border border-gray-700/50 backdrop-blur-sm' 
+                            : 'bg-white/70 hover:bg-white/90 border border-slate-200/50 shadow-sm backdrop-blur-sm'
+                        } hover:shadow-lg`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-200 ${
+                            darkMode 
+                              ? 'bg-gradient-to-br from-violet-900/50 to-purple-900/50 group-hover:from-violet-800/70 group-hover:to-purple-800/70' 
+                              : 'bg-gradient-to-br from-violet-100 to-purple-100 group-hover:from-violet-200 group-hover:to-purple-200'
+                          }`}>
+                            <Sparkles className={`w-3 h-3 ${
+                              darkMode ? 'text-violet-400' : 'text-violet-600'
+                            }`} />
+                          </div>
+                          <span className={`text-sm font-medium transition-colors duration-200 ${
+                            darkMode ? 'text-gray-200' : 'text-slate-700'
+                          }`}>{prompt}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+               
               </div>
             </div>
           )}
