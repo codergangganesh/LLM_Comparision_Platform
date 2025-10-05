@@ -225,7 +225,7 @@ export default function SettingsPage() {
       <AdvancedSidebar />
       
       {/* Adjusted layout to match chat interface with flex and responsive margins */}
-      <div className="lg:ml-80 ml-16 transition-all duration-300">
+      <div className="lg:ml-80 ml-0 transition-all duration-300 pt-16 lg:pt-0">
         <div className={`backdrop-blur-sm border-b transition-colors duration-200 ${
           darkMode 
             ? 'bg-gray-800/60 border-gray-700/30' 

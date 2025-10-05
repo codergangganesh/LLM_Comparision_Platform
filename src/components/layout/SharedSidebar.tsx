@@ -3,11 +3,12 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState, useRef, useEffect } from 'react'
-import { MessageSquare, BarChart3, Brain, Plus, Clock, ChevronDown, User, LogOut, Cog, Trash2, CreditCard, Moon, Sun } from 'lucide-react'
+import { MessageSquare, BarChart3, Brain, Plus, Clock, ChevronDown, User, LogOut, Cog, Trash2, CreditCard, Moon, Sun, Bell } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
 import DeleteAccountPopup from './DeleteAccountPopup'
 import { usePopup } from '@/contexts/PopupContext'
+import NotificationBell from '@/components/ui/NotificationBell'
 
 interface SharedSidebarProps {
   onDeletePopupOpen?: () => void
@@ -102,15 +103,18 @@ export default function SharedSidebar({
       <div className="flex flex-col h-full pb-20">
         {/* Header with Logo */}
         <div className="p-6 border-b border-slate-200/30 dark:border-gray-700">
-          <div className="flex items-center space-x-3 mb-6">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-              <Brain className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Brain className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent dark:from-white dark:to-gray-200">
+                  AI Fiesta
+                </h1>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent dark:from-white dark:to-gray-200">
-                AI Fiesta
-              </h1>
-            </div>
+            <NotificationBell />
           </div>
 
           {/* New Chat Button */}
