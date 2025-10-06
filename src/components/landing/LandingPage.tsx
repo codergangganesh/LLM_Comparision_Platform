@@ -13,6 +13,7 @@ import { useDarkMode } from '@/contexts/DarkModeContext'
 import { usePopup } from '@/contexts/PopupContext'
 import AllModelsOverlay from './AllModelsOverlay' // Fixed the import path
 import AIFiestaLogo from './AIFiestaLogo'
+import VideoTutorialPopup from './VideoTutorialPopup'
 
 interface Feature {
   icon: React.ComponentType<{ className?: string }>
@@ -38,6 +39,7 @@ export default function LandingPage() {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [popupMessage, setPopupMessage] = useState('')
   const [showAllModels, setShowAllModels] = useState(false)
+  const [showVideoTutorial, setShowVideoTutorial] = useState(false)
   const searchParams = useSearchParams()
 
   const features: Feature[] = [
@@ -190,6 +192,12 @@ export default function LandingPage() {
         show={showAllModels}
         onClose={() => setShowAllModels(false)}
         darkMode={darkMode}
+      />
+
+      {/* Add the VideoTutorialPopup component */}
+      <VideoTutorialPopup
+        isOpen={showVideoTutorial}
+        onClose={() => setShowVideoTutorial(false)}
       />
 
       {/* Enhanced Glowing effect overlay */}
@@ -927,11 +935,13 @@ export default function LandingPage() {
       <section className="py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
-            <div className={`inline-flex items-center space-x-2 backdrop-blur-xl rounded-full px-5 py-2.5 mb-6 relative overflow-hidden transition-all duration-300 ${
-              darkMode
-                ? 'bg-gray-800/60 border border-gray-700/50 shadow-xl shadow-violet-500/10'
-                : 'bg-white/70 border border-slate-200/50 shadow-xl shadow-blue-500/10'
-            }`}>
+            <div 
+              onClick={() => setShowVideoTutorial(true)}
+              className={`inline-flex items-center space-x-2 backdrop-blur-xl rounded-full px-5 py-2.5 mb-6 relative overflow-hidden transition-all duration-300 cursor-pointer hover:scale-105 ${
+                darkMode
+                  ? 'bg-gray-800/60 border border-gray-700/50 shadow-xl shadow-violet-500/10'
+                  : 'bg-white/70 border border-slate-200/50 shadow-xl shadow-blue-500/10'
+              }`}>
               <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/10 via-transparent to-yellow-400/10 opacity-0 hover:opacity-100 transition-opacity duration-300 rounded-full"></div>
               <Play className={`w-4 h-4 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`} />
               <span className={`text-sm font-semibold ${darkMode ? 'text-gray-300' : 'text-slate-700'}`}>
