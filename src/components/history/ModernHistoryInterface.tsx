@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown, CreditCard, Moon, Sun, X, Filter, SortDesc, Calendar, ArrowUpDown, Sparkles, AlertCircle, Copy, Grid3X3, List } from 'lucide-react'
+import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown, CreditCard, Moon, Sun, X, Filter, SortDesc, Calendar, ArrowUpDown, Sparkles, AlertCircle, Copy, Grid3X3, List, Check } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { usePathname } from 'next/navigation'
@@ -40,13 +40,13 @@ export default function ModernHistoryInterface() {
   const [selectedSession, setSelectedSession] = useState<string | null>(null)
   const [expandedSession, setExpandedSession] = useState<string | null>(null)
   const [selectedResponse, setSelectedResponse] = useState<{model: AIModel, content: string, error?: string, responseTime?: number, isBestResponse?: boolean} | null>(null);
-  const [modalSession, setModalSession] = useState<ChatSession | null>(null);
   // New state for sort and filter
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'mostResponses'>('newest')
   const [filterByModel, setFilterByModel] = useState<string>('all')
   const [showDeleteAllPopup, setShowDeleteAllPopup] = useState(false)
-  const [showSortFilterDropdown, setShowSortFilterDropdown] = useState(false)
+  const [showSortFilterDropdown, setShowSortFilterDropdown] = useState<'sort' | 'filter' | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [modalSession, setModalSession] = useState<ChatSession | null>(null);
 
   const handleDeleteAccountConfirm = async (password: string) => {
     setIsDeleting(true)
@@ -228,6 +228,36 @@ export default function ModernHistoryInterface() {
     })
     return Array.from(models)
   }
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const sortButton = document.getElementById('sort-button');
+      const filterButton = document.getElementById('filter-button');
+      const sortDropdown = document.getElementById('sort-dropdown');
+      const filterDropdown = document.getElementById('filter-dropdown');
+      
+      // Check if click is outside both button and dropdown
+      if (showSortFilterDropdown === 'sort') {
+        if (sortButton && !sortButton.contains(event.target as Node) &&
+            sortDropdown && !sortDropdown.contains(event.target as Node)) {
+          setShowSortFilterDropdown(null);
+        }
+      }
+      
+      if (showSortFilterDropdown === 'filter') {
+        if (filterButton && !filterButton.contains(event.target as Node) &&
+            filterDropdown && !filterDropdown.contains(event.target as Node)) {
+          setShowSortFilterDropdown(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSortFilterDropdown]);
 
   return (
     <div className={`flex h-screen transition-colors duration-200 ${
@@ -519,7 +549,7 @@ export default function ModernHistoryInterface() {
       {/* Main History Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <div className={`backdrop-blur-sm border-b p-6 transition-colors duration-200 ${
+        <div className={`backdrop-blur-sm border-b p-6 transition-colors duration-200 z-50 ${
           darkMode 
             ? 'bg-gray-800/60 border-gray-700/30' 
             : 'bg-white/60 border-slate-200/30'
@@ -552,7 +582,7 @@ export default function ModernHistoryInterface() {
               </div>
               
               {/* Sort and Filter Controls */}
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 relative">
                 {/* Delete All Button - Only show when there are sessions */}
                 {chatSessions.length > 0 && (
                   <button
@@ -565,10 +595,108 @@ export default function ModernHistoryInterface() {
                   </button>
                 )}
                 
+                {/* Sort Dropdown */}
+                <div className="relative">
+                  <button
+                    id="sort-button"
+                    onClick={() => setShowSortFilterDropdown(showSortFilterDropdown === 'sort' ? null : 'sort')}
+                    className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all duration-200 ${
+                      darkMode 
+                        ? 'bg-gray-700/50 border border-gray-600/50 text-gray-300 hover:bg-gray-700/70' 
+                        : 'bg-white border border-slate-200/50 text-slate-700 hover:border-slate-300/50'
+                    }`}
+                  >
+                    <SortDesc className="w-4 h-4" />
+                    <span className="hidden sm:inline">Sort</span>
+                  </button>
+                  
+                  {/* Sort Dropdown Menu */}
+                  {showSortFilterDropdown === 'sort' && (
+                    <div id="sort-dropdown" className={`absolute right-0 mt-2 w-48 rounded-xl border shadow-xl z-[9999] overflow-hidden ${
+                      darkMode 
+                        ? 'bg-gray-800/95 border-gray-700/50 backdrop-blur-xl' 
+                        : 'bg-white/95 border-slate-200/50 backdrop-blur-xl'
+                    }`}>
+                      <div className="py-2">
+                        <div className="px-4 py-2">
+                          <h3 className={`text-sm font-semibold mb-2 ${
+                            darkMode ? 'text-gray-300' : 'text-slate-700'
+                          }`}>
+                            Sort By
+                          </h3>
+                          <div className="space-y-1">
+                            <button
+                              onClick={() => {
+                                setSortBy('newest')
+                                setShowSortFilterDropdown(null)
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 flex items-center justify-between ${
+                                sortBy === 'newest'
+                                  ? darkMode 
+                                    ? 'bg-blue-900/30 text-blue-300' 
+                                    : 'bg-blue-100 text-blue-700'
+                                  : darkMode 
+                                    ? 'text-gray-300 hover:bg-gray-700/50' 
+                                    : 'text-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              <span>Newest First</span>
+                              {sortBy === 'newest' && (
+                                <Check className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSortBy('oldest')
+                                setShowSortFilterDropdown(null)
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 flex items-center justify-between ${
+                                sortBy === 'oldest'
+                                  ? darkMode 
+                                    ? 'bg-blue-900/30 text-blue-300' 
+                                    : 'bg-blue-100 text-blue-700'
+                                  : darkMode 
+                                    ? 'text-gray-300 hover:bg-gray-700/50' 
+                                    : 'text-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              <span>Oldest First</span>
+                              {sortBy === 'oldest' && (
+                                <Check className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setSortBy('mostResponses')
+                                setShowSortFilterDropdown(null)
+                              }}
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 flex items-center justify-between ${
+                                sortBy === 'mostResponses'
+                                  ? darkMode 
+                                    ? 'bg-blue-900/30 text-blue-300' 
+                                    : 'bg-blue-100 text-blue-700'
+                                  : darkMode 
+                                    ? 'text-gray-300 hover:bg-gray-700/50' 
+                                    : 'text-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              <span>Most Responses</span>
+                              {sortBy === 'mostResponses' && (
+                                <Check className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
                 {/* Filter Dropdown */}
                 <div className="relative">
                   <button
-                    onClick={() => setShowSortFilterDropdown(!showSortFilterDropdown)}
+                    id="filter-button"
+                    onClick={() => setShowSortFilterDropdown(showSortFilterDropdown === 'filter' ? null : 'filter')}
                     className={`flex items-center space-x-2 px-4 py-3 rounded-xl transition-all duration-200 ${
                       darkMode 
                         ? 'bg-gray-700/50 border border-gray-600/50 text-gray-300 hover:bg-gray-700/70' 
@@ -580,75 +708,13 @@ export default function ModernHistoryInterface() {
                   </button>
                   
                   {/* Filter Dropdown Menu */}
-                  {showSortFilterDropdown && (
-                    <div className={`absolute right-0 mt-2 w-64 rounded-xl border shadow-xl z-20 overflow-hidden ${
+                  {showSortFilterDropdown === 'filter' && (
+                    <div id="filter-dropdown" className={`absolute right-0 mt-2 w-48 rounded-xl border shadow-xl z-[9999] overflow-hidden ${
                       darkMode 
                         ? 'bg-gray-800/95 border-gray-700/50 backdrop-blur-xl' 
                         : 'bg-white/95 border-slate-200/50 backdrop-blur-xl'
                     }`}>
                       <div className="py-2">
-                        {/* Sort Options */}
-                        <div className="px-4 py-2">
-                          <h3 className={`text-sm font-semibold mb-2 ${
-                            darkMode ? 'text-gray-300' : 'text-slate-700'
-                          }`}>
-                            Sort By
-                          </h3>
-                          <div className="space-y-1">
-                            <button
-                              onClick={() => {
-                                setSortBy('newest')
-                                setShowSortFilterDropdown(false)
-                              }}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
-                                sortBy === 'newest'
-                                  ? darkMode 
-                                    ? 'bg-blue-900/30 text-blue-300' 
-                                    : 'bg-blue-100 text-blue-700'
-                                  : darkMode 
-                                    ? 'text-gray-300 hover:bg-gray-700/50' 
-                                    : 'text-slate-700 hover:bg-slate-100'
-                              }`}
-                            >
-                              Newest First
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSortBy('oldest')
-                                setShowSortFilterDropdown(false)
-                              }}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
-                                sortBy === 'oldest'
-                                  ? darkMode 
-                                    ? 'bg-blue-900/30 text-blue-300' 
-                                    : 'bg-blue-100 text-blue-700'
-                                  : darkMode 
-                                    ? 'text-gray-300 hover:bg-gray-700/50' 
-                                    : 'text-slate-700 hover:bg-slate-100'
-                              }`}
-                            >
-                              Oldest First
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSortBy('mostResponses')
-                                setShowSortFilterDropdown(false)
-                              }}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
-                                sortBy === 'mostResponses'
-                                  ? darkMode 
-                                    ? 'bg-blue-900/30 text-blue-300' 
-                                    : 'bg-blue-100 text-blue-700'
-                                  : darkMode 
-                                    ? 'text-gray-300 hover:bg-gray-700/50' 
-                                    : 'text-slate-700 hover:bg-slate-100'
-                              }`}
-                            >
-                              Most Responses
-                            </button>
-                          </div>
-                        </div>
-                        
                         <div className={`px-4 py-2 border-t ${
                           darkMode ? 'border-gray-700/50' : 'border-slate-200/50'
                         }`}>
@@ -661,9 +727,9 @@ export default function ModernHistoryInterface() {
                             <button
                               onClick={() => {
                                 setFilterByModel('all')
-                                setShowSortFilterDropdown(false)
+                                setShowSortFilterDropdown(null)
                               }}
-                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
+                              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 flex items-center justify-between ${
                                 filterByModel === 'all'
                                   ? darkMode 
                                     ? 'bg-blue-900/30 text-blue-300' 
@@ -673,7 +739,10 @@ export default function ModernHistoryInterface() {
                                     : 'text-slate-700 hover:bg-slate-100'
                               }`}
                             >
-                              All Models
+                              <span>All Models</span>
+                              {filterByModel === 'all' && (
+                                <Check className="w-4 h-4" />
+                              )}
                             </button>
                             {getUniqueModels().map(modelId => {
                               const model = getModelById(modelId)
@@ -682,9 +751,9 @@ export default function ModernHistoryInterface() {
                                   key={modelId}
                                   onClick={() => {
                                     setFilterByModel(modelId)
-                                    setShowSortFilterDropdown(false)
+                                    setShowSortFilterDropdown(null)
                                   }}
-                                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 ${
+                                  className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors duration-200 flex items-center justify-between ${
                                     filterByModel === modelId
                                       ? darkMode 
                                         ? 'bg-blue-900/30 text-blue-300' 
@@ -694,7 +763,10 @@ export default function ModernHistoryInterface() {
                                         : 'text-slate-700 hover:bg-slate-100'
                                   }`}
                                 >
-                                  {model?.provider || modelId}
+                                  <span>{model?.provider || modelId}</span>
+                                  {filterByModel === modelId && (
+                                    <Check className="w-4 h-4" />
+                                  )}
                                 </button>
                               )
                             })}
@@ -788,17 +860,13 @@ export default function ModernHistoryInterface() {
                         <div 
                           key={session.id}
                           className={`rounded-2xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm overflow-hidden ${
-                            selectedSession === session.id
-                              ? darkMode
-                                ? 'border-blue-500 bg-gradient-to-br from-blue-900/20 to-indigo-900/20'
-                                : 'border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50'
-                              : darkMode
-                                ? 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700/50 hover:border-gray-600/70'
-                                : 'bg-gradient-to-br from-white/50 to-slate-50/50 border-slate-200/50 hover:border-slate-300/70'
+                            darkMode
+                              ? 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700/50 hover:border-gray-600/70'
+                              : 'bg-gradient-to-br from-white/50 to-slate-50/50 border-slate-200/50 hover:border-slate-300/70'
                           }`}
                         >
                           <div 
-                            className="p-5 cursor-pointer h-full flex flex-col"
+                            className="p-5 cursor-pointer h-full flex flex-col transition-all duration-200 active:scale-[0.98]"
                             onClick={() => setModalSession(session)}
                           >
                             <div className="flex items-start justify-between mb-3">
@@ -900,10 +968,13 @@ export default function ModernHistoryInterface() {
                                 <MessageSquare className="w-4 h-4" />
                                 <span>{session.responseCount} responses</span>
                               </div>
-                              <div className={`text-xs px-2 py-1 rounded-full ${
+                              <div className={`flex items-center space-x-1 text-xs px-2 py-1 rounded-full ${
                                 darkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-700'
                               }`}>
-                                Click to view
+                                <span>Click to view</span>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                </svg>
                               </div>
                             </div>
                           </div>
@@ -919,17 +990,13 @@ export default function ModernHistoryInterface() {
                         <div 
                           key={session.id}
                           className={`rounded-2xl border transition-all duration-200 backdrop-blur-sm ${
-                            selectedSession === session.id
-                              ? darkMode
-                                ? 'border-blue-500 bg-blue-900/10'
-                                : 'border-blue-500 bg-blue-50'
-                              : darkMode
-                                ? 'bg-gray-800/50 border-gray-700/50 hover:border-gray-600/50'
-                                : 'bg-white/50 border-slate-200/50 hover:border-slate-300/50'
+                            darkMode
+                              ? 'bg-gray-800/50 border-gray-700/50 hover:border-gray-600/50'
+                              : 'bg-white/50 border-slate-200/50 hover:border-slate-300/50'
                           }`}
                         >
                           <div 
-                            className="p-5 cursor-pointer"
+                            className="p-5 cursor-pointer transition-all duration-200 active:scale-[0.98]"
                             onClick={() => setModalSession(session)}
                           >
                             <div className="flex items-start justify-between mb-3">
@@ -998,6 +1065,14 @@ export default function ModernHistoryInterface() {
                               }`}>
                                 <MessageSquare className="w-4 h-4" />
                                 <span>{session.responseCount}</span>
+                              </div>
+                              <div className={`flex items-center space-x-1 text-xs px-2 py-1 rounded-full ${
+                                darkMode ? 'bg-blue-900/30 text-blue-300' : 'bg-blue-100 text-blue-700'
+                              }`}>
+                                <span>View details</span>
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                </svg>
                               </div>
                             </div>
                           </div>

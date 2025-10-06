@@ -91,7 +91,7 @@ export default function HistoryDetailModal({ session, onClose }: HistoryDetailMo
           darkMode 
             ? 'bg-gradient-to-br from-gray-900/90 to-gray-800/90 border-gray-700' 
             : 'bg-gradient-to-br from-white/90 to-gray-100/90 border-gray-200'
-        } md:max-w-5xl lg:max-w-6xl`}
+        } md:max-w-5xl lg:max-w-6xl transform-gpu`}
       >
         {/* Close button */}
         <button
