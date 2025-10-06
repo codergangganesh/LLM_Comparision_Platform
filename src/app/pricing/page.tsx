@@ -1,78 +1,6 @@
 "use client";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Check, Star, Zap, Users, Award } from 'lucide-react';
-
-const plans = [
-  {
-    name: "Free",
-    description: "Basic features at no cost",
-    price: 0,
-    yearlyPrice: 0,
-    buttonText: "Start Free",
-    buttonVariant: "outline" as const,
-    includes: [
-      "Access to 2 AI models",
-      "10 comparisons per month",
-      "Basic metrics & analytics",
-      "Export results (CSV)",
-      "Community support",
-    ],
-    features: [
-      "Basic model comparisons",
-      "Standard response time",
-      "Email support",
-      "Community access"
-    ]
-  },
-  {
-    name: "Pro",
-    description: "Great for professionals who need more power",
-    price: 199,
-    yearlyPrice: 1999,
-    buttonText: "Get Pro",
-    buttonVariant: "default" as const,
-    popular: true,
-    includes: [
-      "Access to 4+ models",
-      "200 comparisons per month",
-      "Advanced comparison matrix",
-      "Advanced visualizations",
-      "Priority support",
-      "Unlimited projects",
-    ],
-    features: [
-      "Advanced model comparisons",
-      "Faster response times",
-      "Priority email support",
-      "Advanced analytics",
-      "Export to multiple formats"
-    ]
-  },
-  {
-    name: "Pro Plus",
-    description: "Advanced features for scaling your business",
-    price: 399,
-    yearlyPrice: 3999,
-    buttonText: "Get Pro Plus",
-    buttonVariant: "outline" as const,
-    includes: [
-      "Access to all AI models",
-      "Unlimited comparisons",
-      "Advanced AutoML capabilities",
-      "Team collaboration",
-      "All Pro features",
-      "Advanced analytics",
-    ],
-    features: [
-      "All AI models unlocked",
-      "Fastest response times",
-      "24/7 priority support",
-      "Team collaboration tools",
-      "Advanced analytics dashboard",
-      "Custom integrations"
-    ]
-  },
-];
 
 export default function PricingSectionINR() {
   const [isYearly, setIsYearly] = useState(false);
@@ -80,6 +8,100 @@ export default function PricingSectionINR() {
 
   const togglePricingPeriod = (value: string) =>
     setIsYearly(Number.parseInt(value) === 1);
+
+  // Pricing data with monthly/yearly options
+  const plans = [
+    {
+      name: "Free",
+      description: "Basic features at no cost",
+      monthlyPrice: 0,
+      yearlyPrice: 0,
+      price: "₹0",
+      period: "Forever",
+      buttonText: "Start Free",
+      buttonVariant: "outline" as const,
+      includes: [
+        "Access to 2 AI models",
+        "10 comparisons per month",
+        "Basic metrics & analytics",
+        "Export results (CSV)",
+        "Community support",
+      ],
+      features: [
+        "Basic model comparisons",
+        "Standard response time",
+        "Email support",
+        "Community access"
+      ]
+    },
+    {
+      name: "Pro",
+      description: "Great for professionals who need more power",
+      monthlyPrice: 199,
+      yearlyPrice: 1999,
+      price: isYearly ? "₹1,999" : "₹199",
+      period: isYearly ? "per year" : "per month",
+      buttonText: "Get Pro",
+      buttonVariant: "default" as const,
+      popular: true,
+      includes: [
+        "Access to 4+ models",
+        "200 comparisons per month",
+        "Advanced comparison matrix",
+        "Advanced visualizations",
+        "Priority support",
+        "Unlimited projects",
+      ],
+      features: [
+        "Advanced model comparisons",
+        "Faster response times",
+        "Priority email support",
+        "Advanced analytics",
+        "Export to multiple formats"
+      ]
+    },
+    {
+      name: "Pro Plus",
+      description: "Advanced features for scaling your business",
+      monthlyPrice: 399,
+      yearlyPrice: 3999,
+      price: isYearly ? "₹3,999" : "₹399",
+      period: isYearly ? "per year" : "per month",
+      buttonText: "Get Pro Plus",
+      buttonVariant: "outline" as const,
+      includes: [
+        "Access to all AI models",
+        "Unlimited comparisons",
+        "Advanced AutoML capabilities",
+        "Team collaboration",
+        "All Pro features",
+        "Advanced analytics",
+      ],
+      features: [
+        "All AI models unlocked",
+        "Fastest response times",
+        "24/7 priority support",
+        "Team collaboration tools",
+        "Advanced analytics dashboard",
+        "Custom integrations"
+      ]
+    },
+  ];
+
+  // Update plans when isYearly changes
+  const updatedPlans = plans.map(plan => ({
+    ...plan,
+    price: plan.name === "Free" 
+      ? "₹0" 
+      : isYearly 
+        ? `₹${plan.yearlyPrice.toLocaleString()}` 
+        : `₹${plan.monthlyPrice.toLocaleString()}`,
+    period: plan.name === "Free" 
+      ? "Forever" 
+      : isYearly 
+        ? "per year" 
+        : "per month"
+  }));
 
   return (
     <div
@@ -155,7 +177,7 @@ export default function PricingSectionINR() {
       </div>
 
       <div className="grid md:grid-cols-3 max-w-7xl gap-8 py-12 mx-auto px-4 relative z-10">
-        {plans.map((plan, index) => (
+        {updatedPlans.map((plan, index) => (
           <div
             key={plan.name}
             className={`relative rounded-3xl p-8 transition-all duration-300 hover:scale-105 ${
@@ -188,16 +210,16 @@ export default function PricingSectionINR() {
               
               <div className="flex items-baseline mb-6">
                 <span className="text-5xl font-bold text-white">
-                  ${isYearly ? plan.yearlyPrice : plan.price}
+                  {plan.price}
                 </span>
                 <span className="text-gray-400 ml-2">
-                  /{isYearly ? "year" : "month"}
+                  /{plan.period.includes("year") ? "year" : plan.period.includes("month") ? "month" : plan.period}
                 </span>
               </div>
               
-              {isYearly && plan.price > 0 && (
+              {isYearly && plan.monthlyPrice > 0 && (
                 <div className="text-green-400 text-sm font-medium mb-4">
-                  Save ${(plan.price * 12 - plan.yearlyPrice).toLocaleString()} per year
+                  Save ₹{(plan.monthlyPrice * 12 - plan.yearlyPrice).toLocaleString()} per year
                 </div>
               )}
             </div>

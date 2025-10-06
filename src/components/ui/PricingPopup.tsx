@@ -9,60 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 interface Plan {
   name: string
   description: string
-  price: number
+  monthlyPrice: number
   yearlyPrice: number
+  price: string
+  period: string
   buttonText: string
   includes: string[]
   popular?: boolean
 }
-
-const plans: Plan[] = [
-  {
-    name: "Free",
-    description: "Basic features at no cost",
-    price: 0,
-    yearlyPrice: 0,
-    buttonText: "Start Free",
-    includes: [
-      "Access to 2 AI models",
-      "10 comparisons per month",
-      "Basic metrics & analytics",
-      "Export results (CSV)",
-      "Community support",
-    ],
-  },
-  {
-    name: "Pro",
-    description: "Great for professionals who need more power",
-    price: 1500,
-    yearlyPrice: 15000,
-    buttonText: "Get Pro",
-    popular: true,
-    includes: [
-      "Access to 4+ models",
-      "200 comparisons per month",
-      "Advanced comparison matrix",
-      "Advanced visualizations",
-      "Priority support",
-      "Unlimited projects",
-    ],
-  },
-  {
-    name: "Pro Plus",
-    description: "Advanced features for scaling your business",
-    price: 3000,
-    yearlyPrice: 30000,
-    buttonText: "Get Pro Plus",
-    includes: [
-      "Access to all AI models",
-      "Unlimited comparisons",
-      "Advanced AutoML capabilities",
-      "Team collaboration",
-      "All Pro features",
-      "Advanced analytics",
-    ],
-  },
-]
 
 export default function PricingPopup() {
   const { isPaymentPopupOpen, closePaymentPopup } = usePopup()
@@ -83,6 +37,60 @@ export default function PricingPopup() {
   }, [isPaymentPopupOpen])
 
   if (!isPaymentPopupOpen) return null
+
+  const plans: Plan[] = [
+    {
+      name: "Free",
+      description: "Basic features at no cost",
+      monthlyPrice: 0,
+      yearlyPrice: 0,
+      price: "₹0",
+      period: isYearly ? "per year" : "Forever",
+      buttonText: "Start Free",
+      includes: [
+        "Access to 2 AI models",
+        "10 comparisons per month",
+        "Basic metrics & analytics",
+        "Export results (CSV)",
+        "Community support",
+      ],
+    },
+    {
+      name: "Pro",
+      description: "Great for professionals who need more power",
+      monthlyPrice: 199,
+      yearlyPrice: 1999,
+      price: isYearly ? "₹1,999" : "₹199",
+      period: isYearly ? "per year" : "per month",
+      buttonText: "Get Pro",
+      popular: true,
+      includes: [
+        "Access to 4+ models",
+        "200 comparisons per month",
+        "Advanced comparison matrix",
+        "Advanced visualizations",
+        "Priority support",
+        "Unlimited projects",
+      ],
+    },
+    {
+      name: "Pro Plus",
+      description: "Advanced features for scaling your business",
+      monthlyPrice: 399,
+      yearlyPrice: 3999,
+      price: isYearly ? "₹3,999" : "₹399",
+      period: isYearly ? "per year" : "per month",
+      buttonText: "Get Pro Plus",
+      includes: [
+        "Access to all AI models",
+        "Unlimited comparisons",
+        "Advanced AutoML capabilities",
+        "Team collaboration",
+        "All Pro features",
+        "Advanced analytics",
+      ],
+    },
+  ]
 
   const togglePricingPeriod = (value: boolean) => {
     setIsYearly(value)
@@ -192,15 +200,15 @@ export default function PricingPopup() {
                   <div className="mb-6">
                     <div className="flex items-baseline">
                       <span className={`text-4xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                        ₹{isYearly ? plan.yearlyPrice : plan.price}
+                        {plan.price}
                       </span>
                       <span className={`ml-2 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                        /{isYearly ? 'year' : 'month'}
+                        /{plan.period === "Forever" ? "forever" : plan.period.includes("year") ? "year" : "month"}
                       </span>
                     </div>
-                    {isYearly && plan.price > 0 && (
+                    {isYearly && plan.monthlyPrice > 0 && (
                       <p className="text-sm text-green-500 mt-1">
-                        Save ₹{(plan.price * 12 - plan.yearlyPrice).toLocaleString()}
+                        Save ₹{((plan.monthlyPrice * 12 - plan.yearlyPrice)).toLocaleString()}
                       </p>
                     )}
                   </div>

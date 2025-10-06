@@ -8,7 +8,6 @@ import { useDarkMode } from '@/contexts/DarkModeContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/contexts/NotificationContext'
 import { usePopup } from '@/contexts/PopupContext'
-import { createStripeCheckout, redirectToCheckout } from '@/lib/stripe'
 import { createClient } from '@/utils/supabase/client'
 import type { Database } from '@/types/database'
 
@@ -41,6 +40,7 @@ export default function ModernFeedbackAndPricing() {
   const [loading, setLoading] = useState(true)
   const [isProcessing, setIsProcessing] = useState<string | null>(null)
   const [contactErrors, setContactErrors] = useState<Record<string, string>>({})
+  const [isYearly, setIsYearly] = useState(false)
 
   const supabase = createClient()
 
@@ -83,13 +83,15 @@ export default function ModernFeedbackAndPricing() {
     }
   }, [])
 
-  // Pricing data
+  // Pricing data with monthly/yearly options
   const plans = [
     {
       id: 'free',
       name: 'Free Plan',
+      monthlyPrice: 0,
+      yearlyPrice: 0,
       price: '₹0',
-      period: 'Forever',
+      period: isYearly ? 'per year' : 'Forever',
       description: 'Perfect for getting started',
       features: [
         'Access to 2 AI models',
@@ -103,8 +105,10 @@ export default function ModernFeedbackAndPricing() {
     {
       id: 'pro',
       name: 'Pro Plan',
-      price: '₹699',
-      period: 'per year',
+      monthlyPrice: 199,
+      yearlyPrice: 1999,
+      price: isYearly ? '₹1,999' : '₹199',
+      period: isYearly ? 'per year' : 'per month',
       description: 'For serious AI researchers',
       features: [
         'Access to 4 premium models',
@@ -120,8 +124,10 @@ export default function ModernFeedbackAndPricing() {
     {
       id: 'pro-plus',
       name: 'Pro Plus Plan',
-      price: '₹1,299',
-      period: 'per year',
+      monthlyPrice: 399,
+      yearlyPrice: 3999,
+      price: isYearly ? '₹3,999' : '₹399',
+      period: isYearly ? 'per year' : 'per month',
       description: 'Complete AI platform',
       features: [
         'Access to ALL AI models (6+)',
@@ -321,14 +327,22 @@ export default function ModernFeedbackAndPricing() {
   }
 
   const handleChoosePlan = async (planId: string) => {
-    // If it's the free plan, no need to redirect to Stripe
+    // If it's the free plan, redirect to auth or chat based on authentication status
     if (planId === 'free') {
-      success('Free Plan Selected', 'You can get started with the free plan right away!')
+      if (user) {
+        router.push('/chat')
+      } else {
+        router.push('/auth')
+      }
       return
     }
 
     // Instead of processing payment directly, open the payment popup
     openPaymentPopup()
+  }
+
+  const togglePricingPeriod = () => {
+    setIsYearly(!isYearly)
   }
 
   const renderStars = () => {
@@ -371,6 +385,47 @@ export default function ModernFeedbackAndPricing() {
           <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto dark:text-gray-300">
             Join thousands of users who trust our platform for AI model comparison
           </p>
+        </div>
+        
+        {/* Pricing Toggle */}
+        <div className="flex justify-center mb-8">
+          <div className={`inline-flex items-center rounded-full p-1 ${
+            darkMode 
+              ? 'bg-gray-800/60 border border-gray-700/50' 
+              : 'bg-white/80 border border-slate-200/50'
+          }`}>
+            <button
+              onClick={() => setIsYearly(false)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                !isYearly
+                  ? darkMode
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                    : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setIsYearly(true)}
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                isYearly
+                  ? darkMode
+                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                    : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white'
+                  : darkMode
+                    ? 'text-gray-300 hover:text-white'
+                    : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Yearly
+              <span className="ml-2 text-xs px-2 py-1 rounded-full bg-green-500/20 text-green-500">
+                Save 20%
+              </span>
+            </button>
+          </div>
         </div>
         
         {/* Tab Navigation */}
