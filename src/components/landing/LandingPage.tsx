@@ -244,8 +244,8 @@ export default function LandingPage() {
         </div>
       )}
 
-      {/* Header */}
-      <header className={`relative z-50 backdrop-blur-xl border-b transition-all duration-500 ${
+      {/* Header - Made sticky */}
+      <header className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-500 ${
         darkMode
           ? 'bg-gray-900/70 border-gray-800/50 shadow-xl'
           : 'bg-white/70 border-slate-200/50 shadow-lg'
