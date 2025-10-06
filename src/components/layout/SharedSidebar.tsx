@@ -109,9 +109,11 @@ export default function SharedSidebar({
                 <Brain className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent dark:from-white dark:to-gray-200">
-                  AI Fiesta
-                </h1>
+                <Link href="/">
+                  <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent dark:from-white dark:to-gray-200">
+                    AI Fiesta
+                  </h1>
+                </Link>
               </div>
             </div>
             <NotificationBell />

@@ -250,13 +250,15 @@ export default function ModernHistoryInterface() {
                 <Brain className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className={`text-xl font-bold bg-gradient-to-r bg-clip-text text-transparent transition-colors duration-200 ${
-                  darkMode 
-                    ? 'from-white to-gray-200' 
-                    : 'from-slate-900 to-slate-700'
-                }`}>
-                  AI Fiesta
-                </h1>
+                <Link href="/">
+                  <h1 className={`text-xl font-bold bg-gradient-to-r bg-clip-text text-transparent transition-colors duration-200 ${
+                    darkMode 
+                      ? 'from-white to-gray-200' 
+                      : 'from-slate-900 to-slate-700'
+                  }`}>
+                    AI Fiesta
+                  </h1>
+                </Link>
               </div>
             </div>
 

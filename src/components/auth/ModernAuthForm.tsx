@@ -3,7 +3,10 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Github } from 'lucide-react'
+
+import AIFiestaLogo from '@/components/landing/AIFiestaLogo'
 
 export default function ModernAuthForm() {
   const [isLogin, setIsLogin] = useState(true)
@@ -108,6 +111,11 @@ export default function ModernAuthForm() {
     <div className="w-full">
       {/* Form Header */}
       <div className="text-center mb-8">
+        <div className="flex justify-center mb-4">
+          <Link href="/" className="flex items-center">
+            <AIFiestaLogo size="lg" />
+          </Link>
+        </div>
         <h2 className="text-3xl font-bold bg-gradient-to-r from-violet-200 via-purple-100 to-fuchsia-200 bg-clip-text text-transparent mb-3">
           {isLogin ? 'Welcome Back!' : 'Join AI Fiesta!'}
         </h2>
