@@ -66,25 +66,21 @@ export async function POST(req: NextRequest) {
             Authorization: `Bearer ${apiKey}`,
             "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
             "X-Title": process.env.NEXT_PUBLIC_SITE_NAME || "AI Fiesta",
+            "Connection": "keep-alive",  // Reuse connection
+            "Accept": "text/event-stream", // Explicitly accept streaming
           },
           body: JSON.stringify({
             model: modelId,
             messages: messages,
             max_tokens: body.maxTokens ?? 1024,
             temperature: body.temperature ?? 0.7,
-            stream: false,
+            stream: true,
           }),
+          // Optional: Add timeout if needed
         });
 
         if (!res.ok) {
           const errorText = await res.text();
-          console.error(`OpenRouter API error for model ${modelId}:`, {
-            status: res.status,
-            statusText: res.statusText,
-            errorText: errorText,
-            modelId: modelId
-          });
-          
           return { 
             model: modelId, 
             error: `HTTP ${res.status}: ${res.statusText}`,
@@ -92,8 +88,37 @@ export async function POST(req: NextRequest) {
           };
         }
         
-        const json = await res.json();
-        const content: string = json.choices?.[0]?.message?.content ?? "";
+        // Stream parser for OpenRouter SSE format
+        let content = '';
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder();
+        
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n').filter(line => line.trim() !== '');
+            
+            for (const line of lines) {
+              if (line.startsWith('data:')) {
+                const data = line.slice(5).trim();
+                if (data === '[DONE]') continue;
+                
+                try {
+                  const json = JSON.parse(data);
+                  const token = json.choices[0]?.delta?.content;
+                  if (token) content += token;
+                } catch (e) {
+                  console.error('Error parsing SSE:', e);
+                }
+              }
+            }
+          }
+          reader.releaseLock();
+        }
+
         return { model: modelId, content };
       } catch (modelError) {
         console.error(`Error with model ${modelId}:`, modelError);

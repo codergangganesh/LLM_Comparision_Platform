@@ -54,14 +54,26 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
     "Create a workout plan for beginners"
   ]
 
+  // Initialize cache for faster loading
+  const [sessionCache, setSessionCache] = useState<{[key: string]: ChatSession[]}>({})
+
   // Load chat sessions from API on component mount
   useEffect(() => {
     const loadChatSessions = async () => {
-      // Try to load from API
-      const apiSessions = await chatHistoryService.getChatSessions()
-      if (apiSessions && apiSessions.length > 0) {
-        // Ensure timestamp is properly converted to Date objects
-        const sessionsWithDates: ChatSession[] = apiSessions.map((session: any) => ({
+      // Check if we're in a fresh comparison state
+      const isFreshComparison = localStorage.getItem('freshComparison') === 'true'
+      if (isFreshComparison) {
+        // Clear the flag and initialize empty state
+        localStorage.removeItem('freshComparison')
+        setChatSessions([])
+        setCurrentSessionId(null)
+        return
+      }
+      
+      // First check memory cache for instant display
+      const cachedKey = `user_${user?.id}`
+      if (sessionCache[cachedKey]) {
+        const sessionsWithDates: ChatSession[] = sessionCache[cachedKey].map((session: any) => ({
           ...session,
           timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
           selectedModels: session.selectedModels || []
@@ -79,7 +91,7 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
         return
       }
       
-      // Fallback to localStorage if no API sessions
+      // If not in memory cache, try localStorage for faster retrieval
       const savedSessions = localStorage.getItem('aiFiestaChatSessions')
       if (savedSessions) {
         try {
@@ -100,16 +112,58 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
             )
             setCurrentSessionId(mostRecentSession.id)
           }
+          
+          // Cache in memory for next time
+          setSessionCache(prev => ({
+            ...prev,
+            [cachedKey]: sessionsWithDates
+          }))
+          
+          return
         } catch (e) {
           console.error('Failed to parse saved sessions:', e)
         }
+      }
+      
+      // Only make API call if no local data available
+      const apiSessions = await chatHistoryService.getChatSessions()
+      if (apiSessions && apiSessions.length > 0) {
+        // Ensure timestamp is properly converted to Date objects
+        const sessionsWithDates: ChatSession[] = apiSessions.map((session: any) => ({
+          ...session,
+          timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
+          selectedModels: session.selectedModels || []
+        }))
+        setChatSessions(sessionsWithDates)
+        
+        // Set the most recent session as the current session
+        if (sessionsWithDates.length > 0 && !currentSessionId) {
+          const mostRecentSession = sessionsWithDates.reduce((latest: ChatSession, session: ChatSession) => 
+            new Date(session.timestamp) > new Date(latest.timestamp) ? session : latest,
+            sessionsWithDates[0]
+          )
+          setCurrentSessionId(mostRecentSession.id)
+        }
+        
+        // Cache in both memory and localStorage
+        setSessionCache(prev => ({
+          ...prev,
+          [cachedKey]: sessionsWithDates
+        }))
+        
+        // Save to localStorage for offline access
+        const sessionsToSave = sessionsWithDates.map(session => ({
+          ...session,
+          timestamp: session.timestamp.toISOString()
+        }))
+        localStorage.setItem('aiFiestaChatSessions', JSON.stringify(sessionsToSave))
       }
     }
 
     loadChatSessions()
   }, [])
 
-  // Save chat sessions to API whenever they change
+  // Save chat sessions to API and cache whenever they change
   useEffect(() => {
     const saveChatSessions = async () => {
       if (chatSessions.length > 0) {
@@ -144,11 +198,17 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
           }
         })
         localStorage.setItem('aiFiestaChatSessions', JSON.stringify(sessionsToSave))
+        
+        // Update memory cache
+        setSessionCache(prev => ({
+          ...prev,
+          [`user_${user?.id}`]: chatSessions
+        }))
       }
     }
 
     saveChatSessions()
-  }, [chatSessions])
+  }, [chatSessions, user?.id])
 
   useEffect(() => {
     // Auto-resize textarea
@@ -180,7 +240,9 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
   const startNewComparison = (initialMessage?: string) => {
     setChatSessions([])
     setCurrentSessionId(null)
+    // Clear localStorage and set a flag for fresh session
     localStorage.removeItem('aiFiestaChatSessions')
+    localStorage.setItem('freshComparison', 'true')
     setShowBlankPage(false)
     if (initialMessage) {
       setMessage(initialMessage)
