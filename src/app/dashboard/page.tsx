@@ -161,10 +161,8 @@ export default function DashboardPage() {
       // Calculate usage data - use cumulative values for cards
       const usage = dashboardService.getUsageData(fetchedSessions)
       
-      // Preserve cumulative usage data for display in cards, but use current storage value
+      // Preserve cumulative usage data for display in cards
       const cumulativeUsage = dashboardService.getCumulativeUsageData()
-      // Override storage with current value to ensure it updates properly
-      cumulativeUsage.storage = usage.storage
       setUsageData(cumulativeUsage)
       
       // For charts, use current session data (will show empty when sessions are deleted)
@@ -424,7 +422,7 @@ export default function DashboardPage() {
       <SharedSidebar />
       
       {/* Adjusted layout to match chat interface with flex and responsive margins */}
-      <div className="flex-1 flex flex-col">
+      <div className="lg:ml-80 ml-16 transition-all duration-300">
         {/* Header */}
         <div className={`backdrop-blur-sm border-b transition-colors duration-200 ${
           darkMode 
