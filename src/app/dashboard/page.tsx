@@ -161,8 +161,10 @@ export default function DashboardPage() {
       // Calculate usage data - use cumulative values for cards
       const usage = dashboardService.getUsageData(fetchedSessions)
       
-      // Preserve cumulative usage data for display in cards
+      // Preserve cumulative usage data for display in cards, but use current storage value
       const cumulativeUsage = dashboardService.getCumulativeUsageData()
+      // Override storage with current value to ensure it updates properly
+      cumulativeUsage.storage = usage.storage
       setUsageData(cumulativeUsage)
       
       // For charts, use current session data (will show empty when sessions are deleted)
@@ -325,7 +327,7 @@ export default function DashboardPage() {
     csvContent += '\nUsage Data:\n'
     csvContent += `API Calls,${data.usageData.apiCalls}\n`
     csvContent += `Comparisons,${data.usageData.comparisons}\n`
-    csvContent += `Storage,${data.usageData.storage}\n`
+    csvContent += `Storage,${data.usageData.storage} MB\n`
     
     csvContent += `\nUser Plan,${data.userPlan}\n`
     
@@ -356,7 +358,7 @@ export default function DashboardPage() {
     pdfContent += `\nUsage Data:\n`
     pdfContent += `- API Calls: ${data.usageData.apiCalls}\n`
     pdfContent += `- Comparisons: ${data.usageData.comparisons}\n`
-    pdfContent += `- Storage: ${data.usageData.storage} GB\n`
+    pdfContent += `- Storage: ${data.usageData.storage.toFixed(2)} MB\n`
     
     pdfContent += `\nUser Plan: ${data.userPlan}\n`
     
@@ -390,19 +392,19 @@ export default function DashboardPage() {
         return {
           apiCalls: 2500,
           comparisons: 500,
-          storage: 10
+          storage: 10 * 1024 // Convert GB to MB (10 GB = 10240 MB)
         }
       case 'pro_plus':
         return {
           apiCalls: 10000,
           comparisons: Infinity, // unlimited
-          storage: 100
+          storage: 100 * 1024 // Convert GB to MB (100 GB = 102400 MB)
         }
       default: // free plan
         return {
           apiCalls: 100,
           comparisons: 10,
-          storage: 1
+          storage: 50 // 50 MB for free plan
         }
     }
   }
@@ -422,7 +424,7 @@ export default function DashboardPage() {
       <SharedSidebar />
       
       {/* Adjusted layout to match chat interface with flex and responsive margins */}
-      <div className="lg:ml-80 ml-16 transition-all duration-300">
+      <div className="flex-1 flex flex-col">
         {/* Header */}
         <div className={`backdrop-blur-sm border-b transition-colors duration-200 ${
           darkMode 
@@ -742,12 +744,12 @@ export default function DashboardPage() {
                     <p className={`text-sm ${
                       darkMode ? 'text-gray-400' : 'text-slate-600'
                     }`}>
-                      {usageData.storage.toFixed(2)} / {getPlanLimits(userPlan).storage}
+                      {usageData.storage.toFixed(2)} MB
                     </p>
                     <p className={`text-xs ${
                       darkMode ? 'text-gray-500' : 'text-slate-500'
                     }`}>
-                      GB
+                      used
                     </p>
                   </div>
                 </div>
@@ -762,7 +764,7 @@ export default function DashboardPage() {
                   <div 
                     className="bg-green-600 h-2 rounded-full" 
                     style={{ 
-                      width: `${calculateUsagePercentage(usageData.storage, getPlanLimits(userPlan).storage)}%` 
+                      width: `${Math.min(100, (usageData.storage / getPlanLimits(userPlan).storage) * 100)}%` 
                     }}
                   ></div>
                 </div>
@@ -770,7 +772,7 @@ export default function DashboardPage() {
                 <p className={`text-sm ${
                   darkMode ? 'text-gray-400' : 'text-slate-600'
                 }`}>
-                  {calculateUsagePercentage(usageData.storage, getPlanLimits(userPlan).storage).toFixed(1)}% used
+                  {Math.min(100, (usageData.storage / getPlanLimits(userPlan).storage) * 100).toFixed(1)}% of {getPlanLimits(userPlan).storage} MB used
                 </p>
               </div>
             </div>

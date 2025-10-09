@@ -24,8 +24,8 @@ export const AI_MODELS = [
     capabilities: ['text', 'analysis', 'reasoning']
   },
   {
-    id: 'gemini-flash-1.5-free',
-    name: 'Gemini Flash 1.5 (Free)',
+    id: 'google/gemma-3n-e2b-it:free',
+    name: 'google/gemma-3n-e2b-it:free',
     displayName: 'Gemini Flash 1.5 (Free)',
     provider: 'Google',
     description: 'Google\'s fast multimodal AI model with free tier',

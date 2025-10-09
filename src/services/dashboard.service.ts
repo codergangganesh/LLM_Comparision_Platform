@@ -183,17 +183,47 @@ export class DashboardService {
   getUsageData(sessions: ChatSession[]): UsageData {
     const apiCalls = sessions.length
     const comparisons = sessions.length
-    // Estimate storage based on session data (rough approximation)
-    const storage = Math.round(sessions.reduce((sum, session) => {
-      return sum + (session.message?.length || 0) + 
-             (session.responses?.reduce((respSum, resp: ChatResponse) => respSum + (resp.content?.length || 0), 0) || 0)
-    }, 0) / 1024 / 1024 * 100) / 100 // Convert to MB then to GB with 2 decimal places
+    
+    // Calculate actual storage usage based on the size of data in chat_sessions
+    let totalStorageBytes = 0
+    
+    sessions.forEach(session => {
+      // Add size of message
+      totalStorageBytes += new Blob([session.message || '']).size
+      
+      // Add size of responses
+      if (session.responses) {
+        try {
+          const responsesString = JSON.stringify(session.responses)
+          totalStorageBytes += new Blob([responsesString]).size
+        } catch (e) {
+          // If JSON stringify fails, estimate size differently
+          totalStorageBytes += session.responses.length * 100 // rough estimate
+        }
+      }
+      
+      // Add size of other fields
+      totalStorageBytes += new Blob([session.id || '']).size
+      totalStorageBytes += new Blob([session.bestResponse || '']).size
+      totalStorageBytes += 4 // Approximate size of response_time (float)
+      totalStorageBytes += 8 // Approximate size of timestamp (datetime)
+      
+      // Add size of selected_models array
+      if (session.selectedModels) {
+        session.selectedModels.forEach(model => {
+          totalStorageBytes += new Blob([model]).size
+        })
+      }
+    })
+    
+    // Convert bytes to MB
+    const storageMB = totalStorageBytes / (1024 * 1024)
 
-    // Update cumulative usage data
+    // Update cumulative usage data for apiCalls and comparisons (these should be cumulative)
     this.cumulativeUsageData = {
       apiCalls: Math.max(this.cumulativeUsageData.apiCalls, apiCalls),
       comparisons: Math.max(this.cumulativeUsageData.comparisons, comparisons),
-      storage: Math.max(this.cumulativeUsageData.storage, Math.max(0.1, storage))
+      storage: storageMB // Storage should reflect current usage, not cumulative
     }
 
     return { ...this.cumulativeUsageData }

@@ -28,7 +28,7 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [loading, setLoading] = useState<string[]>([])
   const [selectedModels, setSelectedModels] = useState<string[]>(
-    AVAILABLE_MODELS.slice(0, 3).map(model => model.id)
+    AVAILABLE_MODELS.slice(0, 2).map(model => model.id)
   )
   const [showModelSelector, setShowModelSelector] = useState(false)
   const [showBlankPage, setShowBlankPage] = useState(false)

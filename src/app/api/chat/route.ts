@@ -15,6 +15,11 @@ type ApiError = {
   details?: any;
 };
 
+// Function to delay execution
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -57,35 +62,96 @@ export async function POST(req: NextRequest) {
   try {
     const startTime = Date.now(); // Track start time for response time calculation
     
-    const requests = body.models.map(async (modelId) => {
+    // Process requests sequentially with rate limiting to avoid 429 errors
+    const results = [];
+    for (let i = 0; i < body.models.length; i++) {
+      const modelId = body.models[i];
+      
       try {
-        const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        let res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${apiKey}`,
             "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
             "X-Title": process.env.NEXT_PUBLIC_SITE_NAME || "AI Fiesta",
-            "Connection": "keep-alive",  // Reuse connection
-            "Accept": "text/event-stream", // Explicitly accept streaming
+            "Connection": "keep-alive",
+            "Accept": "text/event-stream",
           },
           body: JSON.stringify({
             model: modelId,
             messages: messages,
-            max_tokens: body.maxTokens ?? 1024,
+            max_tokens: body.maxTokens ?? 512, // Reduced default tokens
             temperature: body.temperature ?? 0.7,
             stream: true,
           }),
-          // Optional: Add timeout if needed
         });
 
         if (!res.ok) {
           const errorText = await res.text();
-          return { 
-            model: modelId, 
-            error: `HTTP ${res.status}: ${res.statusText}`,
-            details: errorText || `Failed to get response from ${modelId}`
-          };
+          
+          // If we get a 429 error, implement exponential backoff
+          if (res.status === 429) {
+            console.log(`Rate limited for model ${modelId}, implementing exponential backoff...`);
+            
+            // Exponential backoff: start with 2 seconds, double each time, up to 3 attempts
+            let retryDelay = 2000; // 2 seconds
+            let retryAttempts = 0;
+            const maxRetries = 3;
+            
+            while (retryAttempts < maxRetries) {
+              console.log(`Retry attempt ${retryAttempts + 1}/${maxRetries} after ${retryDelay}ms delay...`);
+              await delay(retryDelay);
+              
+              const retryRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${apiKey}`,
+                  "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000",
+                  "X-Title": process.env.NEXT_PUBLIC_SITE_NAME || "AI Fiesta",
+                  "Connection": "keep-alive",
+                  "Accept": "text/event-stream",
+                },
+                body: JSON.stringify({
+                  model: modelId,
+                  messages: messages,
+                  max_tokens: body.maxTokens ?? 512, // Reduced tokens for retries
+                  temperature: body.temperature ?? 0.7,
+                  stream: true,
+                }),
+              });
+              
+              if (retryRes.ok) {
+                res = retryRes;
+                break;
+              }
+              
+              retryAttempts++;
+              retryDelay *= 2; // Double the delay for next attempt
+              
+              if (retryAttempts >= maxRetries) {
+                const retryErrorText = await retryRes.text();
+                results.push({ 
+                  model: modelId, 
+                  error: `HTTP ${retryRes.status}: ${retryRes.statusText}`,
+                  details: retryErrorText || `Failed to get response from ${modelId} after ${maxRetries} retries`
+                });
+                break;
+              }
+            }
+            
+            if (!res.ok && retryAttempts >= maxRetries) {
+              continue;
+            }
+          } else {
+            results.push({ 
+              model: modelId, 
+              error: `HTTP ${res.status}: ${res.statusText}`,
+              details: errorText || `Failed to get response from ${modelId}`
+            });
+            continue;
+          }
         }
         
         // Stream parser for OpenRouter SSE format
@@ -119,18 +185,25 @@ export async function POST(req: NextRequest) {
           reader.releaseLock();
         }
 
-        return { model: modelId, content };
+        results.push({ model: modelId, content });
       } catch (modelError) {
         console.error(`Error with model ${modelId}:`, modelError);
-        return { 
+        results.push({ 
           model: modelId, 
           error: modelError instanceof Error ? modelError.message : String(modelError),
           details: "Failed to get response from this model"
-        };
+        });
       }
-    });
+      
+      // Add increased delay between requests to avoid rate limiting
+      // Increase delay based on number of models to reduce rate limit issues
+      if (i < body.models.length - 1) {
+        const baseDelay = 500; // Increased from 200ms to 500ms
+        const additionalDelay = body.models.length > 3 ? 300 : 0; // Extra delay for many models
+        await delay(baseDelay + additionalDelay);
+      }
+    }
 
-    const results = await Promise.all(requests);
     const endTime = Date.now();
     const responseTime = (endTime - startTime) / 1000; // Calculate response time in seconds
 

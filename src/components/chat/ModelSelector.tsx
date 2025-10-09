@@ -67,6 +67,18 @@ export default function ModelSelector({ selectedModels, onModelToggle }: ModelSe
     }
   }
 
+  // Limit to 3 models max to prevent rate limiting
+  const handleModelToggle = (modelId: string) => {
+    if (selectedModels.includes(modelId)) {
+      onModelToggle(modelId);
+    } else {
+      // Only allow up to 3 models to be selected
+      if (selectedModels.length < 3) {
+        onModelToggle(modelId);
+      }
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -77,35 +89,29 @@ export default function ModelSelector({ selectedModels, onModelToggle }: ModelSe
           </div>
           <div>
             <h3 className="font-bold text-slate-900">AI Models</h3>
-            <p className="text-sm text-slate-600">Select models to compare</p>
+            <p className="text-sm text-slate-600">Select models to compare (max 3)</p>
           </div>
         </div>
         
         <div className="flex items-center space-x-2">
           <button
             onClick={() => {
-              if (selectedModels.length === AVAILABLE_MODELS.length) {
-                // Deselect all
-                AVAILABLE_MODELS.forEach(model => {
-                  if (selectedModels.includes(model.id)) {
-                    onModelToggle(model.id)
-                  }
-                })
-              } else {
-                // Select all
-                AVAILABLE_MODELS.forEach(model => {
-                  if (!selectedModels.includes(model.id)) {
-                    onModelToggle(model.id)
-                  }
-                })
-              }
+              // Only select up to 3 models
+              const modelsToSelect = AVAILABLE_MODELS.slice(0, 3);
+              modelsToSelect.forEach(model => {
+                if (!selectedModels.includes(model.id)) {
+                  onModelToggle(model.id);
+                }
+              });
             }}
-            className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all duration-200">
-            {selectedModels.length === AVAILABLE_MODELS.length ? 'Deselect All' : 'Select All'}
+            className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all duration-200"
+            disabled={selectedModels.length >= 3}
+          >
+            {selectedModels.length === AVAILABLE_MODELS.length ? 'Deselect All' : 'Select Top 3'}
           </button>
           
           <div className="px-3 py-1 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 text-xs font-bold rounded-lg">
-            {selectedModels.length} / {AVAILABLE_MODELS.length}
+            {selectedModels.length} / 3
           </div>
         </div>
       </div>
@@ -118,7 +124,7 @@ export default function ModelSelector({ selectedModels, onModelToggle }: ModelSe
           return (
             <div
               key={model.id}
-              onClick={() => onModelToggle(model.id)}
+              onClick={() => handleModelToggle(model.id)}
               className={`group relative p-4 rounded-xl cursor-pointer transition-all duration-300 ${
                 isSelected
                   ? 'bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-300 shadow-lg scale-105'
