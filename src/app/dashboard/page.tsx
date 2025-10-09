@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
 import SharedSidebar from '@/components/layout/SharedSidebar'
@@ -11,6 +11,9 @@ import ResponseTimeDistribution from '@/components/dashboard/ResponseTimeDistrib
 import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
 import OptimizedPageTransitionLoader from '@/components/ui/OptimizedPageTransitionLoader'
 import { useOptimizedLoading } from '@/contexts/OptimizedLoadingContext'
+import { dashboardService, DashboardMetrics, UsageData, ModelUsageData, TimeSeriesData } from '@/services/dashboard.service'
+import { ChatSession } from '@/types/chat'
+import { createClient } from '@/utils/supabase/client'
 
 import {
   TrendingUp,
@@ -38,70 +41,225 @@ export default function DashboardPage() {
   const router = useOptimizedRouter()
   const { darkMode } = useDarkMode()
   const { setPageLoading } = useOptimizedLoading()
+  const supabase = createClient()
+  const realtimeSubscriptionRef = useRef<any>(null)
+  
   const [metrics, setMetrics] = useState<MetricCard[]>([
     {
       title: 'Total Comparisons',
-      value: '24',
-      change: '+12.5%',
+      value: '0',
+      change: '+0%',
       trend: 'up',
       icon: GitCompare,
       color: 'blue'
     },
     {
       title: 'Models Analyzed',
-      value: '8',
-      change: '+8.2%',
+      value: '0',
+      change: '+0%',
       trend: 'up',
       icon: Brain,
       color: 'purple'
     },
     {
       title: 'Accuracy Score',
-      value: '92%',
-      change: '+2.1%',
+      value: '0%',
+      change: '+0%',
       trend: 'up',
       icon: TrendingUp,
       color: 'green'
     },
     {
       title: 'API Usage',
-      value: '45%',
-      change: '-5.4%',
-      trend: 'down',
+      value: '0%',
+      change: '+0%',
+      trend: 'up',
       icon: Activity,
       color: 'orange'
     }
   ])
   
+  const [usageData, setUsageData] = useState<UsageData>({
+    apiCalls: 0,
+    comparisons: 0,
+    storage: 0
+  })
+  
+  const [responseTimeData, setResponseTimeData] = useState<ModelUsageData[]>([])
+  const [messagesTypedData, setMessagesTypedData] = useState<ModelUsageData[]>([])
+  const [modelDataTimeData, setModelDataTimeData] = useState<ModelUsageData[]>([])
+  const [responseTimeDistributionData, setResponseTimeDistributionData] = useState<ModelUsageData[]>([])
+  const [lineChartData, setLineChartData] = useState<TimeSeriesData[]>([])
+  const [lineChartMetrics, setLineChartMetrics] = useState<string[]>([])
+  const [lineChartMetricLabels, setLineChartMetricLabels] = useState<Record<string, string>>({})
+  const [userPlan] = useState('free')
+  const [sessions, setSessions] = useState<ChatSession[]>([])
+  const [loadingData, setLoadingData] = useState(true)
+  const [isExportOpen, setIsExportOpen] = useState(false)
+  
+  // Reset color map when component mounts
+  useEffect(() => {
+    // Reset the model color map for consistent coloring
+    dashboardService.clearCache()
+  }, [])
+  
   // Redirect unauthenticated users to the auth page
   useEffect(() => {
     if (!loading && !user) {
-      setPageLoading(true, "Redirecting to authentication...");
+      setPageLoading(true, "Redirecting to authentication...")
       router.push('/auth')
     } else if (user && !loading) {
-      setPageLoading(false);
+      setPageLoading(false)
     }
   }, [user, loading, router, setPageLoading])
 
+  // Function to update dashboard data
+  const updateDashboardData = async (fetchedSessions: ChatSession[]) => {
+    if (fetchedSessions) {
+      setSessions(fetchedSessions)
+      
+      // Calculate metrics
+      const dashboardMetrics = dashboardService.calculateDashboardMetrics(fetchedSessions)
+      setMetrics([
+        {
+          title: 'Total Comparisons',
+          value: dashboardMetrics.totalComparisons.toString(),
+          change: '+12.5%',
+          trend: 'up',
+          icon: GitCompare,
+          color: 'blue'
+        },
+        {
+          title: 'Models Analyzed',
+          value: dashboardMetrics.modelsAnalyzed.toString(),
+          change: '+8.2%',
+          trend: 'up',
+          icon: Brain,
+          color: 'purple'
+        },
+        {
+          title: 'Accuracy Score',
+          value: `${dashboardMetrics.accuracyScore}%`,
+          change: '+2.1%',
+          trend: 'up',
+          icon: TrendingUp,
+          color: 'green'
+        },
+        {
+          title: 'API Usage',
+          value: `${dashboardMetrics.apiUsage}%`,
+          change: '-5.4%',
+          trend: 'down',
+          icon: Activity,
+          color: 'orange'
+        }
+      ])
+      
+      // Calculate usage data
+      const usage = dashboardService.getUsageData(fetchedSessions)
+      setUsageData(usage)
+      
+      // Calculate chart data
+      setResponseTimeData(dashboardService.getResponseTimeData(fetchedSessions))
+      setMessagesTypedData(dashboardService.getMessagesTypedData(fetchedSessions))
+      setModelDataTimeData(dashboardService.getModelDataTimeData(fetchedSessions))
+      setResponseTimeDistributionData(dashboardService.getResponseTimeDistributionData(fetchedSessions))
+      
+      // Calculate line chart data
+      const lineData = dashboardService.getLineChartData(fetchedSessions)
+      setLineChartData(lineData)
+      
+      const metricsList = dashboardService.getLineChartMetrics(fetchedSessions)
+      setLineChartMetrics(metricsList)
+      
+      const metricLabels: Record<string, string> = {}
+      metricsList.forEach(metric => {
+        metricLabels[metric] = metric
+      })
+      setLineChartMetricLabels(metricLabels)
+    }
+  }
+
+  // Fetch dashboard data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user || loading) return
+      
+      setLoadingData(true)
+      try {
+        // Fetch chat sessions
+        const fetchedSessions = await dashboardService.getChatSessions()
+        await updateDashboardData(fetchedSessions || [])
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setLoadingData(false)
+      }
+    }
+    
+    fetchData()
+  }, [user, loading])
+  
+  // Set up real-time subscription for chat sessions
+  useEffect(() => {
+    if (!user || loading) return
+
+    // Subscribe to chat session changes
+    const channel = supabase
+      .channel('dashboard-chat-sessions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_sessions',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('New chat session added:', payload.new)
+          // Clear cache and fetch updated data
+          dashboardService.clearCache()
+          const fetchedSessions = await dashboardService.getChatSessions(false)
+          await updateDashboardData(fetchedSessions || [])
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_sessions',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('Chat session updated:', payload.new)
+          // Clear cache and fetch updated data
+          dashboardService.clearCache()
+          const fetchedSessions = await dashboardService.getChatSessions(false)
+          await updateDashboardData(fetchedSessions || [])
+        }
+      )
+      .subscribe()
+
+    realtimeSubscriptionRef.current = channel
+
+    // Clean up subscription
+    return () => {
+      if (realtimeSubscriptionRef.current) {
+        supabase.removeChannel(realtimeSubscriptionRef.current)
+      }
+    }
+  }, [user, loading])
+
   // Show loading while checking auth status
-  if (loading) {
-    return <OptimizedPageTransitionLoader message="Loading dashboard..." />;
+  if (loading || loadingData) {
+    return <OptimizedPageTransitionLoader message="Loading dashboard..." />
   }
 
   // Show nothing while redirecting
   if (!user) {
-    return null;
+    return null
   }
-  
-  const [usageData] = useState({
-    apiCalls: 45,
-    comparisons: 24,
-    storage: 2.3
-  })
-  
-  const [userPlan] = useState('free')
-  
-  const [isExportOpen, setIsExportOpen] = useState(false)
   
   // Function to generate dashboard data for export
   const generateDashboardData = () => {
@@ -192,75 +350,6 @@ export default function DashboardPage() {
     setIsExportOpen(false)
   }
   
-  // Mock data for charts
-  const responseTimeData = [
-    { name: 'GPT-4', value: 2.3, color: '#3B82F6' },
-    { name: 'Claude-3', value: 1.8, color: '#3B82F6' },
-    { name: 'LLaMA-3', value: 3.1, color: '#3B82F6' },
-    { name: 'Qwen-2.5', value: 2.7, color: '#3B82F6' },
-    { name: 'DeepSeek', value: 3.5, color: '#3B82F6' }
-  ]
-
-  const messagesTypedData = [
-    { name: 'GPT-4', value: 12, color: '#10B981' },
-    { name: 'Claude-3', value: 8, color: '#10B981' },
-    { name: 'LLaMA-3', value: 15, color: '#10B981' },
-    { name: 'Qwen-2.5', value: 10, color: '#10B981' },
-    { name: 'DeepSeek', value: 18, color: '#10B981' }
-  ]
-
-  const modelDataTimeData = [
-    { name: 'GPT-4', value: 0.4, color: '#8B5CF6' },
-    { name: 'Claude-3', value: 0.3, color: '#8B5CF6' },
-    { name: 'LLaMA-3', value: 0.7, color: '#8B5CF6' },
-    { name: 'Qwen-2.5', value: 0.5, color: '#8B5CF6' },
-    { name: 'DeepSeek', value: 0.8, color: '#8B5CF6' }
-  ]
-
-  const responseTimeDistributionData = [
-    { name: 'GPT-4', value: 2.3, color: '#F59E0B' },
-    { name: 'Claude-3', value: 1.8, color: '#F59E0B' },
-    { name: 'LLaMA-3', value: 3.1, color: '#F59E0B' },
-    { name: 'Qwen-2.5', value: 2.7, color: '#F59E0B' },
-    { name: 'DeepSeek', value: 3.5, color: '#F59E0B' }
-  ]
-
-  const lineChartData = [
-    { period: '2025-09-15', 'GPT-4': 2.3, 'Claude-3': 1.8, 'LLaMA-3': 3.1, 'Qwen-2.5': 2.7, 'DeepSeek': 3.5 },
-    { period: '2025-09-16', 'GPT-4': 2.1, 'Claude-3': 1.9, 'LLaMA-3': 3.2, 'Qwen-2.5': 2.6, 'DeepSeek': 3.4 },
-    { period: '2025-09-17', 'GPT-4': 2.5, 'Claude-3': 1.7, 'LLaMA-3': 3.0, 'Qwen-2.5': 2.8, 'DeepSeek': 3.6 },
-    { period: '2025-09-18', 'GPT-4': 2.2, 'Claude-3': 1.8, 'LLaMA-3': 3.3, 'Qwen-2.5': 2.5, 'DeepSeek': 3.3 },
-    { period: '2025-09-19', 'GPT-4': 2.4, 'Claude-3': 1.9, 'LLaMA-3': 3.1, 'Qwen-2.5': 2.9, 'DeepSeek': 3.7 },
-    { period: '2025-09-20', 'GPT-4': 2.0, 'Claude-3': 1.7, 'LLaMA-3': 3.2, 'Qwen-2.5': 2.4, 'DeepSeek': 3.2 }
-  ]
-  
-  const lineChartMetrics = ['GPT-4', 'Claude-3', 'LLaMA-3', 'Qwen-2.5', 'DeepSeek']
-  const lineChartMetricLabels = {
-    'GPT-4': 'GPT-4',
-    'Claude-3': 'Claude-3',
-    'LLaMA-3': 'LLaMA-3',
-    'Qwen-2.5': 'Qwen-2.5',
-    'DeepSeek': 'DeepSeek'
-  }
-
-  const getMetricColorClasses = (color: string) => {
-    const colors = {
-      blue: darkMode 
-        ? 'from-blue-600 to-blue-700 text-white' 
-        : 'from-blue-500 to-blue-600 text-white',
-      purple: darkMode 
-        ? 'from-purple-600 to-purple-700 text-white' 
-        : 'from-purple-500 to-purple-600 text-white',
-      green: darkMode 
-        ? 'from-green-600 to-green-700 text-white' 
-        : 'from-green-500 to-green-600 text-white',
-      orange: darkMode 
-        ? 'from-orange-600 to-orange-700 text-white' 
-        : 'from-orange-500 to-orange-600 text-white'
-    }
-    return colors[color as keyof typeof colors] || colors.blue
-  }
-
   // Function to get plan display name
   const getPlanDisplayName = () => {
     switch (userPlan) {
@@ -704,4 +793,14 @@ export default function DashboardPage() {
       </div>
     </div>
   )
+}
+
+const getMetricColorClasses = (color: string) => {
+  const colors = {
+    blue: 'from-blue-500 to-blue-600 text-white',
+    purple: 'from-purple-500 to-purple-600 text-white',
+    green: 'from-green-500 to-green-600 text-white',
+    orange: 'from-orange-500 to-orange-600 text-white'
+  }
+  return colors[color as keyof typeof colors] || colors.blue
 }

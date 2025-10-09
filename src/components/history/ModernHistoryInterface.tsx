@@ -54,6 +54,7 @@ export default function ModernHistoryInterface() {
   const [modalSession, setModalSession] = useState<ChatSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeletingAll, setIsDeletingAll] = useState(false); // New state for delete all loading
 
   const handleDeleteAccountConfirm = async (password: string) => {
     setIsDeleting(true)
@@ -207,23 +208,29 @@ export default function ModernHistoryInterface() {
   }
 
   const handleDeleteAllSessions = async () => {
-    // Delete all sessions from API
-    for (const session of chatSessions) {
-      await chatHistoryService.deleteChatSession(session.id)
+    setIsDeletingAll(true); // Set loading state to true
+    try {
+      // Delete all sessions from API
+      for (const session of chatSessions) {
+        await chatHistoryService.deleteChatSession(session.id)
+      }
+      
+      // Clear local state
+      setChatSessions([])
+      setFilteredSessions([])
+      
+      // Clear localStorage
+      localStorage.removeItem('aiFiestaChatSessions')
+      
+      // Close expanded session if any
+      setExpandedSession(null)
+    } catch (error) {
+      console.error('Error deleting all sessions:', error)
+    } finally {
+      // Close the delete all popup and reset loading state
+      setShowDeleteAllPopup(false)
+      setIsDeletingAll(false)
     }
-    
-    // Clear local state
-    setChatSessions([])
-    setFilteredSessions([])
-    
-    // Clear localStorage
-    localStorage.removeItem('aiFiestaChatSessions')
-    
-    // Close expanded session if any
-    setExpandedSession(null)
-    
-    // Close the delete all popup
-    setShowDeleteAllPopup(false)
   }
 
   const formatTimeAgo = (date: Date) => {
@@ -1342,40 +1349,61 @@ export default function ModernHistoryInterface() {
                 </h3>
                 <button
                   onClick={() => setShowDeleteAllPopup(false)}
+                  disabled={isDeletingAll} // Disable close button during deletion
                   className={`p-2 rounded-lg transition-colors duration-200 ${
                     darkMode 
                       ? 'text-gray-400 hover:text-white hover:bg-gray-700/50' 
                       : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
-                  }`}
+                  } ${isDeletingAll ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
               
-              <p className={`mb-6 ${
-                darkMode ? 'text-gray-300' : 'text-slate-600'
-              }`}>
-                Are you sure you want to delete all chat history? This action cannot be undone.
-              </p>
-              
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowDeleteAllPopup(false)}
-                  className={`px-4 py-2 rounded-xl font-medium transition-colors duration-200 ${
-                    darkMode 
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                      : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                  }`}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDeleteAllSessions}
-                  className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
-                >
-                  Delete All
-                </button>
-              </div>
+              {isDeletingAll ? (
+                // Loading state content
+                <div className="flex flex-col items-center justify-center py-6">
+                  <div className="w-16 h-16 border-4 border-red-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                  <p className={`text-lg font-medium mb-2 ${
+                    darkMode ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    Deleting All History
+                  </p>
+                  <p className={`${
+                    darkMode ? 'text-gray-300' : 'text-slate-600'
+                  }`}>
+                    Please wait while we remove all your chat history...
+                  </p>
+                </div>
+              ) : (
+                // Confirmation content
+                <>
+                  <p className={`mb-6 ${
+                    darkMode ? 'text-gray-300' : 'text-slate-600'
+                  }`}>
+                    Are you sure you want to delete all chat history? This action cannot be undone.
+                  </p>
+                  
+                  <div className="flex justify-end space-x-3">
+                    <button
+                      onClick={() => setShowDeleteAllPopup(false)}
+                      className={`px-4 py-2 rounded-xl font-medium transition-colors duration-200 ${
+                        darkMode 
+                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                          : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                      }`}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleDeleteAllSessions}
+                      className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
+                    >
+                      Delete All
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
