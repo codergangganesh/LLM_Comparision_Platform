@@ -25,7 +25,11 @@ import {
   Sparkles,
   Download,
   Bell,
-  Filter
+  Filter,
+  Calendar,
+  Clock,
+  MessageSquare,
+  Database
 } from 'lucide-react'
 import SimpleProfileIcon from '@/components/layout/SimpleProfileIcon'
 import NotificationBell from '@/components/ui/NotificationBell'
@@ -102,6 +106,7 @@ export default function DashboardPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [selectedModels, setSelectedModels] = useState<string[]>([])
   const [availableModels, setAvailableModels] = useState<any[]>([])
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
   
   // Reset color map when component mounts
   useEffect(() => {
@@ -496,6 +501,29 @@ export default function DashboardPage() {
                 {/* Simple Profile Icon */}
                 <SimpleProfileIcon />
                 
+               {/* Time Range Selector */}
+<div className="relative">
+  <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 shadow-sm ${
+    darkMode 
+      ? 'bg-gradient-to-r from-gray-800 to-gray-900 text-white border border-gray-700' 
+      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300'
+  }`}>
+    <Calendar className={`w-4 h-4 ${darkMode ? 'text-white' : 'text-gray-800'}`} />
+    <select 
+      value={timeRange}
+      onChange={(e) => setTimeRange(e.target.value as any)}
+      className={`bg-transparent text-sm font-medium focus:outline-none ${
+        darkMode ? 'text-white' : 'text-gray-800'
+      }`}
+    >
+      <option value="7d">Last 7 days</option>
+      <option value="30d">Last 30 days</option>
+      <option value="90d">Last 90 days</option>
+    </select>
+  </div>
+</div>
+
+                
                 {/* Filter Dropdown */}
                 <div className="relative">
                   <button 
@@ -507,7 +535,7 @@ export default function DashboardPage() {
                     }`}
                   >
                     <Filter className="w-4 h-4" />
-                    <span className="font-medium">Filter</span>
+                    <span className="font-medium"></span>
                   </button>
                   
                   {/* Dropdown menu for model filtering */}
@@ -672,8 +700,7 @@ export default function DashboardPage() {
                             darkMode 
                               ? 'hover:bg-gray-700/50 text-gray-300 hover:text-white' 
                               : 'hover:bg-slate-100 text-slate-700 hover:text-slate-900'
-                          }`}
-                        >
+                          }`}>
                           <div className="flex items-center space-x-2">
                             <div className={`w-8 h-8 rounded-md flex items-center justify-center ${
                               darkMode ? 'bg-green-900/30' : 'bg-green-100'
@@ -691,8 +718,7 @@ export default function DashboardPage() {
                             darkMode 
                               ? 'hover:bg-gray-700/50 text-gray-300 hover:text-white' 
                               : 'hover:bg-slate-100 text-slate-700 hover:text-slate-900'
-                          }`}
-                        >
+                          }`}>
                           <div className="flex items-center space-x-2">
                             <div className={`w-8 h-8 rounded-md flex items-center justify-center ${
                               darkMode ? 'bg-red-900/30' : 'bg-red-100'
@@ -732,7 +758,6 @@ export default function DashboardPage() {
 
         {/* Main Content */}
         <div className="p-6 space-y-6">
-
           {/* Metrics Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {metrics.map((metric, index) => {
@@ -897,9 +922,7 @@ export default function DashboardPage() {
                       ? 'from-green-600 to-green-700 text-white' 
                       : 'from-green-500 to-green-600 text-white'
                   }`}>
-                    <div className="w-6 h-6 flex items-center justify-center">
-                      <div className="w-4 h-4 rounded border-2 border-white"></div>
-                    </div>
+                    <Database className="w-6 h-6" />
                   </div>
                   <div className="text-right">
                     <p className={`text-sm ${

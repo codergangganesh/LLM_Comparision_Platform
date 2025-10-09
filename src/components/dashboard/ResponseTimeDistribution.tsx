@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { Clock, TrendingUp, TrendingDown } from 'lucide-react'
 
 interface ResponseTimeDistributionProps {
   data: { name: string; value: number; color: string }[]
@@ -12,9 +13,22 @@ const ResponseTimeDistribution: React.FC<ResponseTimeDistributionProps> = ({ dat
   // Find the maximum value for scaling
   const maxValue = data.length > 0 ? Math.max(...data.map(item => item.value), 0) : 1
   
+  // Calculate average response time
+  const averageTime = data.length > 0 ? data.reduce((sum, item) => sum + item.value, 0) / data.length : 0
+  
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
-      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{title}</h3>
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-300">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
+        {data.length > 0 && (
+          <div className="flex items-center text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">
+            <Clock className="w-3 h-3 mr-1 text-gray-500 dark:text-gray-400" />
+            <span className="font-medium text-gray-900 dark:text-white">
+              Avg: {averageTime.toFixed(2)}{unit}
+            </span>
+          </div>
+        )}
+      </div>
       {data.length > 0 ? (
         <div className="overflow-x-auto">
           <div className="min-w-full">
@@ -26,37 +40,55 @@ const ResponseTimeDistribution: React.FC<ResponseTimeDistributionProps> = ({ dat
             </div>
             
             {/* Data rows */}
-            {data.map((item, index) => (
-              <div key={index} className="flex items-center py-3 border-b border-gray-100 dark:border-gray-800">
-                <div className="w-1/4">
-                  <div className="flex items-center">
-                    <div 
-                      className="w-3 h-3 rounded-full mr-2" 
-                      style={{ backgroundColor: item.color }}
-                    ></div>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {item.name}
-                    </span>
+            {data.map((item, index) => {
+              // Calculate difference from average
+              const diffFromAvg = averageTime > 0 ? ((item.value - averageTime) / averageTime) * 100 : 0
+              const isAboveAverage = diffFromAvg > 0
+              
+              return (
+                <div key={index} className="flex items-center py-3 border-b border-gray-100 dark:border-gray-800">
+                  <div className="w-1/4">
+                    <div className="flex items-center">
+                      <div 
+                        className="w-3 h-3 rounded-full mr-2" 
+                        style={{ backgroundColor: item.color }}
+                      ></div>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                        {item.name}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="w-1/4">
+                    <div className="flex items-center">
+                      <span className="text-sm text-gray-600 dark:text-gray-300">
+                        {item.value}{unit}
+                      </span>
+                      {diffFromAvg !== 0 && (
+                        <div className={`ml-2 flex items-center text-xs ${isAboveAverage ? 'text-red-500' : 'text-green-500'}`}>
+                          {isAboveAverage ? (
+                            <TrendingUp className="w-3 h-3 mr-1" />
+                          ) : (
+                            <TrendingDown className="w-3 h-3 mr-1" />
+                          )}
+                          <span>{Math.abs(diffFromAvg).toFixed(0)}%</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="w-2/4">
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="h-2 rounded-full transition-all duration-500 ease-out" 
+                        style={{ 
+                          width: `${maxValue > 0 ? (item.value / maxValue) * 100 : 0}%`,
+                          backgroundColor: item.color
+                        }}
+                      ></div>
+                    </div>
                   </div>
                 </div>
-                <div className="w-1/4">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">
-                    {item.value}{unit}
-                  </span>
-                </div>
-                <div className="w-2/4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="h-2 rounded-full" 
-                      style={{ 
-                        width: `${maxValue > 0 ? (item.value / maxValue) * 100 : 0}%`,
-                        backgroundColor: item.color
-                      }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       ) : (

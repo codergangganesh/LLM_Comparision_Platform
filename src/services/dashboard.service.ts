@@ -456,6 +456,16 @@ export class DashboardService {
   getCumulativeUsageData(): UsageData {
     return { ...this.cumulativeUsageData }
   }
+  
+  // Filter sessions by date range
+  filterSessionsByDateRange(sessions: ChatSession[], days: number): ChatSession[] {
+    if (days <= 0) return sessions;
+    
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    
+    return sessions.filter(session => new Date(session.timestamp) >= cutoffDate);
+  }
 }
 
 export const dashboardService = new DashboardService()
