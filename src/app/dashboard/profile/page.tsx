@@ -58,6 +58,27 @@ export default function ProfilePage() {
 
   const [saveStatus, setSaveStatus] = useState<{type: 'success' | 'error' | null, message: string}>({type: null, message: ''})
 
+  // Update form data when user data changes
+  useEffect(() => {
+    setFormData({
+      name: user?.user_metadata?.full_name || '',
+      email: user?.email || '',
+      joinDate: 'January 2024',
+      currentPassword: '',
+      newPassword: '',
+      confirmNewPassword: '',
+      notifications: {
+        email: true,
+        product: false,
+        security: true
+      },
+      appearance: {
+        theme: darkMode ? 'dark' : 'light',
+        language: 'en'
+      }
+    })
+  }, [user, darkMode])
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target
     if (type === 'checkbox') {
@@ -128,6 +149,35 @@ export default function ProfilePage() {
     setTimeout(() => setSaveStatus({type: null, message: ''}), 3000)
   }
 
+  // Function to get user display name
+  const getUserDisplayName = () => {
+    return user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')
+  }
+
+  // Function to get user avatar or initial
+  const getUserAvatar = () => {
+    if (user?.user_metadata?.avatar_url) {
+      return (
+        <img 
+          src={user.user_metadata.avatar_url} 
+          alt="Profile" 
+          className="w-24 h-24 rounded-full object-cover"
+        />
+      )
+    }
+    
+    const displayName = getUserDisplayName()
+    const initial = displayName.charAt(0).toUpperCase()
+    
+    return (
+      <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg mb-4">
+        <span className="text-2xl font-bold text-white">
+          {initial}
+        </span>
+      </div>
+    )
+  }
+
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'notifications', label: 'Notifications', icon: Bell },
@@ -175,11 +225,7 @@ export default function ProfilePage() {
               }`}>
                 <div className="flex flex-col items-center mb-6">
                   <div className="relative">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg mb-4">
-                      <span className="text-2xl font-bold text-white">
-                        {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                      </span>
-                    </div>
+                    {getUserAvatar()}
                     <button className="absolute bottom-4 right-0 bg-white dark:bg-gray-700 rounded-full p-2 shadow-md hover:bg-slate-50 dark:hover:bg-gray-600 transition-colors">
                       <Camera className="w-4 h-4 text-slate-600 dark:text-gray-300" />
                     </button>
@@ -187,7 +233,7 @@ export default function ProfilePage() {
                   <h2 className={`text-xl font-bold transition-colors duration-200 ${
                     darkMode ? 'text-white' : 'text-slate-900'
                   }`}>
-                    {user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')}
+                    {getUserDisplayName()}
                   </h2>
                   <p className={`text-sm transition-colors duration-200 ${
                     darkMode ? 'text-gray-300' : 'text-slate-600'

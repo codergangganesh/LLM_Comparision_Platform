@@ -78,6 +78,35 @@ export default function HistoryDetailModal({ session, onClose }: HistoryDetailMo
     return aiModel
   }
 
+  // Function to get user display name
+  const getUserDisplayName = () => {
+    return user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'
+  }
+
+  // Function to get user avatar or initial
+  const getUserAvatar = () => {
+    if (user?.user_metadata?.avatar_url) {
+      return (
+        <img 
+          src={user.user_metadata.avatar_url} 
+          alt="Profile" 
+          className="w-10 h-10 rounded-lg object-cover"
+        />
+      )
+    }
+    
+    const displayName = getUserDisplayName()
+    const initial = displayName.charAt(0).toUpperCase()
+    
+    return (
+      <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
+        darkMode ? 'bg-blue-600' : 'bg-blue-500'
+      }`}>
+        <span className="text-white font-bold">{initial}</span>
+      </div>
+    )
+  }
+
   return (
     <div 
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 ${isVisible ? 'bg-black/70 backdrop-blur-sm animate-fadeIn' : 'bg-black/0'} transition-all duration-300`}
@@ -95,7 +124,7 @@ export default function HistoryDetailModal({ session, onClose }: HistoryDetailMo
             : 'bg-gradient-to-br from-white/90 to-gray-100/90 border-gray-200'
         } md:max-w-5xl lg:max-w-6xl transform-gpu`}
       >
-        {/* Close button */}
+        {/* Close button */}`
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors z-10"
@@ -121,15 +150,11 @@ export default function HistoryDetailModal({ session, onClose }: HistoryDetailMo
               darkMode ? 'bg-gradient-to-r from-blue-900/30 to-blue-900/10 border-blue-700/50' : 'bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200'
             }`}>
               <div className="flex items-start space-x-4">
-                <div className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center ${
-                  darkMode ? 'bg-blue-600' : 'bg-blue-500'
-                }`}>
-                  <User className="w-5 h-5 text-white" />
-                </div>
+                {getUserAvatar()}
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
                     <span className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                      {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                      {getUserDisplayName()}
                     </span>
                     <div className={`text-xs px-2 py-1 rounded-full font-semibold ${
                       darkMode ? 'bg-blue-800 text-blue-300' : 'bg-blue-200 text-blue-700'

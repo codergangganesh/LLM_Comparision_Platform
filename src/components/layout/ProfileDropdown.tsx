@@ -73,6 +73,37 @@ export default function ProfileDropdown({
     }
   }
 
+  // Function to get user display name
+  const getUserDisplayName = () => {
+    return user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')
+  }
+
+  // Function to get user avatar or initial
+  const getUserAvatar = (size: 'sm' | 'md' = 'sm') => {
+    const dimensions = size === 'sm' ? 'w-8 h-8' : 'w-12 h-12'
+    
+    if (user?.user_metadata?.avatar_url) {
+      return (
+        <img 
+          src={user.user_metadata.avatar_url} 
+          alt="Profile" 
+          className={`${dimensions} rounded-full object-cover`}
+        />
+      )
+    }
+    
+    const displayName = getUserDisplayName()
+    const initial = displayName.charAt(0).toUpperCase()
+    
+    return (
+      <div className={`${dimensions} rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md`}>
+        <span className={`${size === 'sm' ? 'text-xs' : 'text-lg'} font-bold text-white`}>
+          {initial}
+        </span>
+      </div>
+    )
+  }
+
   return (
     <div className="relative" ref={dropdownRef}>
       <div 
@@ -80,22 +111,10 @@ export default function ProfileDropdown({
         onClick={() => setIsOpen(!isOpen)}
       >
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
-            {user?.user_metadata?.avatar_url ? (
-              <img 
-                src={user.user_metadata.avatar_url} 
-                alt="Profile" 
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            ) : (
-              <span className="text-xs font-bold text-white">
-                {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
-              </span>
-            )}
-          </div>
+          {getUserAvatar('sm')}
           <div className="flex flex-col text-left min-w-0">
             <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-              {user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')}
+              {getUserDisplayName()}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
               {user?.email || 'user@example.com'}
@@ -127,24 +146,12 @@ export default function ProfileDropdown({
                 : 'bg-gradient-to-r from-gray-50/80 to-white/80'
             }`}>
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-                  {user?.user_metadata?.avatar_url ? (
-                    <img 
-                      src={user.user_metadata.avatar_url} 
-                      alt="Profile" 
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-lg font-bold text-white">
-                      {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                    </span>
-                  )}
-                </div>
+                {getUserAvatar('md')}
                 <div className="flex-1 min-w-0">
                   <p className={`font-bold text-lg truncate ${
                     darkMode ? 'text-white' : 'text-gray-900'
                   }`}>
-                    {user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')}
+                    {getUserDisplayName()}
                   </p>
                   <p className={`text-sm truncate ${
                     darkMode ? 'text-gray-300' : 'text-gray-600'
