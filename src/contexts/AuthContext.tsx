@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import { dashboardService } from '@/services/dashboard.service'
 
 interface User {
   id: string
@@ -244,6 +245,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Sign out and clear local user data
       await supabase.auth.signOut()
       setUser(null)
+      
+      // Reset dashboard cumulative metrics when account is deleted
+      dashboardService.resetCumulativeMetrics()
+      
       if (hideLoadingFn) {
         hideLoadingFn()
       }

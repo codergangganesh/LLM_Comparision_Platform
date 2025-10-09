@@ -73,6 +73,39 @@ export class DashboardService {
     storage: 0
   }
 
+  constructor() {
+    // Load cumulative metrics from localStorage on initialization
+    this.loadCumulativeMetricsFromStorage()
+  }
+
+  // Load cumulative metrics from localStorage
+  private loadCumulativeMetricsFromStorage() {
+    try {
+      const savedCumulativeMetrics = localStorage.getItem('aiFiestaCumulativeMetrics')
+      const savedCumulativeUsageData = localStorage.getItem('aiFiestaCumulativeUsageData')
+      
+      if (savedCumulativeMetrics) {
+        this.cumulativeMetrics = JSON.parse(savedCumulativeMetrics)
+      }
+      
+      if (savedCumulativeUsageData) {
+        this.cumulativeUsageData = JSON.parse(savedCumulativeUsageData)
+      }
+    } catch (error) {
+      console.error('Error loading cumulative metrics from localStorage:', error)
+    }
+  }
+
+  // Save cumulative metrics to localStorage
+  private saveCumulativeMetricsToStorage() {
+    try {
+      localStorage.setItem('aiFiestaCumulativeMetrics', JSON.stringify(this.cumulativeMetrics))
+      localStorage.setItem('aiFiestaCumulativeUsageData', JSON.stringify(this.cumulativeUsageData))
+    } catch (error) {
+      console.error('Error saving cumulative metrics to localStorage:', error)
+    }
+  }
+
   async getChatSessions(useCache = true): Promise<ChatSession[] | null> {
     try {
       // Check if we have valid cached data
@@ -129,7 +162,7 @@ export class DashboardService {
     this.lastFetchTime = null
   }
 
-  // Method to reset cumulative metrics (used when user wants to reset all data)
+  // Method to reset cumulative metrics (used when user wants to reset all data or deletes account)
   resetCumulativeMetrics() {
     this.cumulativeMetrics = {
       totalComparisons: 0,
@@ -143,6 +176,21 @@ export class DashboardService {
       comparisons: 0,
       storage: 0
     }
+    
+    // Also clear localStorage
+    try {
+      localStorage.removeItem('aiFiestaCumulativeMetrics')
+      localStorage.removeItem('aiFiestaCumulativeUsageData')
+    } catch (error) {
+      console.error('Error clearing cumulative metrics from localStorage:', error)
+    }
+  }
+
+  // Method to preserve cumulative metrics when chat history is deleted
+  // This ensures that dashboard cards retain their values even when individual sessions are deleted
+  preserveCumulativeMetricsOnSessionDeletion() {
+    // Do nothing - cumulative metrics are already preserved
+    // This method exists to make the intent clear in the code
   }
 
   // Assign a distinct color to each model
@@ -175,6 +223,9 @@ export class DashboardService {
       accuracyScore: Math.max(this.cumulativeMetrics.accuracyScore, accuracyScore),
       apiUsage: Math.max(this.cumulativeMetrics.apiUsage, apiUsage)
     }
+
+    // Save to localStorage
+    this.saveCumulativeMetricsToStorage()
 
     return { ...this.cumulativeMetrics }
   }
@@ -225,6 +276,9 @@ export class DashboardService {
       comparisons: Math.max(this.cumulativeUsageData.comparisons, comparisons),
       storage: storageMB // Storage should reflect current usage, not cumulative
     }
+
+    // Save to localStorage
+    this.saveCumulativeMetricsToStorage()
 
     return { ...this.cumulativeUsageData }
   }

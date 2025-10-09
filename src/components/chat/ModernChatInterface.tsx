@@ -918,7 +918,7 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
                                 <p className={`font-medium transition-colors duration-200 ${
                                   darkMode ? 'text-white' : 'text-slate-900'
                                 }`}>
-                                  User
+                                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
                                 </p>
                               </div>
                               <p className={`mt-2 transition-colors duration-200 ${

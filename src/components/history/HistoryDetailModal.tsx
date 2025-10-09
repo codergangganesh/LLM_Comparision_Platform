@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { X, Copy, User, Sparkles, Clock, Check } from 'lucide-react'
 import { useDarkMode } from '@/contexts/DarkModeContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { ChatResponse } from '@/types/chat'
 import { AIModel } from '@/types/app'
 import { getModelById, AVAILABLE_MODELS, AiModel } from '@/lib/models'
@@ -22,6 +23,7 @@ interface HistoryDetailModalProps {
 
 export default function HistoryDetailModal({ session, onClose }: HistoryDetailModalProps) {
   const { darkMode } = useDarkMode()
+  const { user } = useAuth()
   const [copied, setCopied] = useState(false)
   const [copiedResponses, setCopiedResponses] = useState<Record<string, boolean>>({})
   const [isVisible, setIsVisible] = useState(false)
@@ -127,7 +129,7 @@ export default function HistoryDetailModal({ session, onClose }: HistoryDetailMo
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
                     <span className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                      Your Message
+                      {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
                     </span>
                     <div className={`text-xs px-2 py-1 rounded-full font-semibold ${
                       darkMode ? 'bg-blue-800 text-blue-300' : 'bg-blue-200 text-blue-700'

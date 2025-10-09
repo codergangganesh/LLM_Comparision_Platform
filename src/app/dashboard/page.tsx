@@ -7,6 +7,7 @@ import SharedSidebar from '@/components/layout/SharedSidebar'
 import BarChart from '@/components/dashboard/BarChart'
 import LineChart from '@/components/dashboard/LineChart'
 import DonutChart from '@/components/dashboard/DonutChart'
+import SimpleCircleChart from '@/components/dashboard/SimpleCircleChart'
 import ResponseTimeDistribution from '@/components/dashboard/ResponseTimeDistribution'
 import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
 import OptimizedPageTransitionLoader from '@/components/ui/OptimizedPageTransitionLoader'
@@ -122,6 +123,7 @@ export default function DashboardPage() {
       const dashboardMetrics = dashboardService.calculateDashboardMetrics(fetchedSessions)
       
       // Preserve cumulative metrics for display in cards
+      // This ensures that even when sessions are deleted, the numerical cards retain their values
       const cumulativeMetrics = dashboardService.getCumulativeMetrics()
       setMetrics([
         {
@@ -162,10 +164,12 @@ export default function DashboardPage() {
       const usage = dashboardService.getUsageData(fetchedSessions)
       
       // Preserve cumulative usage data for display in cards
+      // This ensures that even when sessions are deleted, the numerical cards retain their values
       const cumulativeUsage = dashboardService.getCumulativeUsageData()
       setUsageData(cumulativeUsage)
       
       // For charts, use current session data (will show empty when sessions are deleted)
+      // Charts should reflect current state, not cumulative data
       setResponseTimeData(dashboardService.getResponseTimeData(fetchedSessions))
       setMessagesTypedData(dashboardService.getMessagesTypedData(fetchedSessions))
       setModelDataTimeData(dashboardService.getModelDataTimeData(fetchedSessions))
@@ -256,6 +260,8 @@ export default function DashboardPage() {
         async (payload) => {
           console.log('Chat session deleted:', payload.old)
           // Clear cache and fetch updated data
+          // IMPORTANT: When sessions are deleted, we want to preserve cumulative metrics
+          // but update the charts to show "No data available"
           dashboardService.clearCache()
           const fetchedSessions = await dashboardService.getChatSessions(false)
           await updateDashboardData(fetchedSessions || [])
@@ -783,7 +789,7 @@ export default function DashboardPage() {
               title="Response Time Comparison" 
               unit="s"
             />
-            <DonutChart 
+            <SimpleCircleChart 
               data={messagesTypedData} 
               title="Messages Typed per Model" 
             />
