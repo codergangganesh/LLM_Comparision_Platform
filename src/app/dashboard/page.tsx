@@ -72,8 +72,8 @@ export default function DashboardPage() {
     {
       title: 'API Usage',
       value: '0%',
-      change: '+0%',
-      trend: 'up',
+      change: '-0%',
+      trend: 'down',
       icon: Activity,
       color: 'orange'
     }
@@ -118,12 +118,15 @@ export default function DashboardPage() {
     if (fetchedSessions) {
       setSessions(fetchedSessions)
       
-      // Calculate metrics
+      // Calculate metrics - use cumulative values for cards
       const dashboardMetrics = dashboardService.calculateDashboardMetrics(fetchedSessions)
+      
+      // Preserve cumulative metrics for display in cards
+      const cumulativeMetrics = dashboardService.getCumulativeMetrics()
       setMetrics([
         {
           title: 'Total Comparisons',
-          value: dashboardMetrics.totalComparisons.toString(),
+          value: cumulativeMetrics.totalComparisons.toString(),
           change: '+12.5%',
           trend: 'up',
           icon: GitCompare,
@@ -131,7 +134,7 @@ export default function DashboardPage() {
         },
         {
           title: 'Models Analyzed',
-          value: dashboardMetrics.modelsAnalyzed.toString(),
+          value: cumulativeMetrics.modelsAnalyzed.toString(),
           change: '+8.2%',
           trend: 'up',
           icon: Brain,
@@ -139,7 +142,7 @@ export default function DashboardPage() {
         },
         {
           title: 'Accuracy Score',
-          value: `${dashboardMetrics.accuracyScore}%`,
+          value: `${cumulativeMetrics.accuracyScore}%`,
           change: '+2.1%',
           trend: 'up',
           icon: TrendingUp,
@@ -147,7 +150,7 @@ export default function DashboardPage() {
         },
         {
           title: 'API Usage',
-          value: `${dashboardMetrics.apiUsage}%`,
+          value: `${cumulativeMetrics.apiUsage}%`,
           change: '-5.4%',
           trend: 'down',
           icon: Activity,
@@ -155,11 +158,14 @@ export default function DashboardPage() {
         }
       ])
       
-      // Calculate usage data
+      // Calculate usage data - use cumulative values for cards
       const usage = dashboardService.getUsageData(fetchedSessions)
-      setUsageData(usage)
       
-      // Calculate chart data
+      // Preserve cumulative usage data for display in cards
+      const cumulativeUsage = dashboardService.getCumulativeUsageData()
+      setUsageData(cumulativeUsage)
+      
+      // For charts, use current session data (will show empty when sessions are deleted)
       setResponseTimeData(dashboardService.getResponseTimeData(fetchedSessions))
       setMessagesTypedData(dashboardService.getMessagesTypedData(fetchedSessions))
       setModelDataTimeData(dashboardService.getModelDataTimeData(fetchedSessions))
@@ -233,6 +239,22 @@ export default function DashboardPage() {
         },
         async (payload) => {
           console.log('Chat session updated:', payload.new)
+          // Clear cache and fetch updated data
+          dashboardService.clearCache()
+          const fetchedSessions = await dashboardService.getChatSessions(false)
+          await updateDashboardData(fetchedSessions || [])
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'chat_sessions',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload) => {
+          console.log('Chat session deleted:', payload.old)
           // Clear cache and fetch updated data
           dashboardService.clearCache()
           const fetchedSessions = await dashboardService.getChatSessions(false)

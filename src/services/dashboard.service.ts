@@ -1,3 +1,5 @@
+'use client'
+
 import { ChatSession, ChatResponse } from '@/types/chat'
 import { createClient } from '@/utils/supabase/client'
 import { AI_MODELS } from '@/config/ai-models'
@@ -55,6 +57,21 @@ export class DashboardService {
   private lastFetchTime: number | null = null
   private readonly CACHE_DURATION = 5 * 60 * 1000 // 5 minutes cache
   private modelColorMap: Map<string, string> = new Map()
+  
+  // Cumulative metrics to preserve even when chat history is deleted
+  private cumulativeMetrics: DashboardMetrics = {
+    totalComparisons: 0,
+    modelsAnalyzed: 0,
+    accuracyScore: 0,
+    apiUsage: 0
+  }
+  
+  // Cumulative usage data
+  private cumulativeUsageData: UsageData = {
+    apiCalls: 0,
+    comparisons: 0,
+    storage: 0
+  }
 
   async getChatSessions(useCache = true): Promise<ChatSession[] | null> {
     try {
@@ -112,6 +129,22 @@ export class DashboardService {
     this.lastFetchTime = null
   }
 
+  // Method to reset cumulative metrics (used when user wants to reset all data)
+  resetCumulativeMetrics() {
+    this.cumulativeMetrics = {
+      totalComparisons: 0,
+      modelsAnalyzed: 0,
+      accuracyScore: 0,
+      apiUsage: 0
+    }
+    
+    this.cumulativeUsageData = {
+      apiCalls: 0,
+      comparisons: 0,
+      storage: 0
+    }
+  }
+
   // Assign a distinct color to each model
   assignModelColor(modelId: string): string {
     // If we already have a color for this model, return it
@@ -135,12 +168,15 @@ export class DashboardService {
     const accuracyScore = totalResponses > 0 ? Math.min(100, Math.round((totalComparisons / totalResponses) * 100)) : 0
     const apiUsage = Math.min(100, Math.round((totalComparisons / 100) * 100)) // Placeholder calculation
 
-    return {
-      totalComparisons,
-      modelsAnalyzed: uniqueModels,
-      accuracyScore,
-      apiUsage
+    // Update cumulative metrics
+    this.cumulativeMetrics = {
+      totalComparisons: Math.max(this.cumulativeMetrics.totalComparisons, totalComparisons),
+      modelsAnalyzed: Math.max(this.cumulativeMetrics.modelsAnalyzed, uniqueModels),
+      accuracyScore: Math.max(this.cumulativeMetrics.accuracyScore, accuracyScore),
+      apiUsage: Math.max(this.cumulativeMetrics.apiUsage, apiUsage)
     }
+
+    return { ...this.cumulativeMetrics }
   }
 
   // Get usage data for the user
@@ -153,11 +189,14 @@ export class DashboardService {
              (session.responses?.reduce((respSum, resp: ChatResponse) => respSum + (resp.content?.length || 0), 0) || 0)
     }, 0) / 1024 / 1024 * 100) / 100 // Convert to MB then to GB with 2 decimal places
 
-    return {
-      apiCalls,
-      comparisons,
-      storage: Math.max(0.1, storage) // Ensure minimum storage value
+    // Update cumulative usage data
+    this.cumulativeUsageData = {
+      apiCalls: Math.max(this.cumulativeUsageData.apiCalls, apiCalls),
+      comparisons: Math.max(this.cumulativeUsageData.comparisons, comparisons),
+      storage: Math.max(this.cumulativeUsageData.storage, Math.max(0.1, storage))
     }
+
+    return { ...this.cumulativeUsageData }
   }
 
   // Get response time data by model
@@ -322,6 +361,16 @@ export class DashboardService {
   // Get model color based on model ID for consistent coloring
   getModelColor(modelId: string): string {
     return this.assignModelColor(modelId)
+  }
+  
+  // Get current cumulative metrics
+  getCumulativeMetrics(): DashboardMetrics {
+    return { ...this.cumulativeMetrics }
+  }
+  
+  // Get current cumulative usage data
+  getCumulativeUsageData(): UsageData {
+    return { ...this.cumulativeUsageData }
   }
 }
 
