@@ -341,7 +341,7 @@ export default function LandingPage() {
                           <span>Chat</span>
                         </Link>
                         <Link
-                          href="/dashboard/profile"
+                          href="/profile"
                           className={`flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
                             darkMode
                               ? 'text-gray-200 hover:bg-gray-700/80'

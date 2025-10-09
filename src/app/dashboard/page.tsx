@@ -15,6 +15,7 @@ import { useOptimizedLoading } from '@/contexts/OptimizedLoadingContext'
 import { dashboardService, DashboardMetrics, UsageData, ModelUsageData, TimeSeriesData } from '@/services/dashboard.service'
 import { ChatSession } from '@/types/chat'
 import { createClient } from '@/utils/supabase/client'
+import { AI_MODELS } from '@/config/ai-models'
 
 import {
   TrendingUp,
@@ -23,7 +24,8 @@ import {
   Activity,
   Sparkles,
   Download,
-  Bell
+  Bell,
+  Filter
 } from 'lucide-react'
 import SimpleProfileIcon from '@/components/layout/SimpleProfileIcon'
 import NotificationBell from '@/components/ui/NotificationBell'
@@ -97,6 +99,9 @@ export default function DashboardPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [loadingData, setLoadingData] = useState(true)
   const [isExportOpen, setIsExportOpen] = useState(false)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [selectedModels, setSelectedModels] = useState<string[]>([])
+  const [availableModels, setAvailableModels] = useState<any[]>([])
   
   // Reset color map when component mounts
   useEffect(() => {
@@ -114,13 +119,28 @@ export default function DashboardPage() {
     }
   }, [user, loading, router, setPageLoading])
 
+  // Load available models
+  useEffect(() => {
+    setAvailableModels(AI_MODELS)
+  }, [])
+
+  // Filter sessions based on selected models
+  const filterSessionsByModels = (sessions: ChatSession[], models: string[]): ChatSession[] => {
+    if (models.length === 0) return sessions
+    return sessions.filter(session => 
+      session.selectedModels?.some(model => models.includes(model))
+    )
+  }
+
   // Function to update dashboard data
   const updateDashboardData = async (fetchedSessions: ChatSession[]) => {
     if (fetchedSessions) {
-      setSessions(fetchedSessions)
+      // Filter sessions based on selected models
+      const filteredSessions = filterSessionsByModels(fetchedSessions, selectedModels)
+      setSessions(filteredSessions)
       
       // Calculate metrics - use cumulative values for cards
-      const dashboardMetrics = dashboardService.calculateDashboardMetrics(fetchedSessions)
+      const dashboardMetrics = dashboardService.calculateDashboardMetrics(filteredSessions)
       
       // Preserve cumulative metrics for display in cards
       // This ensures that even when sessions are deleted, the numerical cards retain their values
@@ -161,7 +181,7 @@ export default function DashboardPage() {
       ])
       
       // Calculate usage data - use cumulative values for cards
-      const usage = dashboardService.getUsageData(fetchedSessions)
+      const usage = dashboardService.getUsageData(filteredSessions)
       
       // Preserve cumulative usage data for display in cards
       // This ensures that even when sessions are deleted, the numerical cards retain their values
@@ -170,16 +190,16 @@ export default function DashboardPage() {
       
       // For charts, use current session data (will show empty when sessions are deleted)
       // Charts should reflect current state, not cumulative data
-      setResponseTimeData(dashboardService.getResponseTimeData(fetchedSessions))
-      setMessagesTypedData(dashboardService.getMessagesTypedData(fetchedSessions))
-      setModelDataTimeData(dashboardService.getModelDataTimeData(fetchedSessions))
-      setResponseTimeDistributionData(dashboardService.getResponseTimeDistributionData(fetchedSessions))
+      setResponseTimeData(dashboardService.getResponseTimeData(filteredSessions))
+      setMessagesTypedData(dashboardService.getMessagesTypedData(filteredSessions))
+      setModelDataTimeData(dashboardService.getModelDataTimeData(filteredSessions))
+      setResponseTimeDistributionData(dashboardService.getResponseTimeDistributionData(filteredSessions))
       
       // Calculate line chart data
-      const lineData = dashboardService.getLineChartData(fetchedSessions)
+      const lineData = dashboardService.getLineChartData(filteredSessions)
       setLineChartData(lineData)
       
-      const metricsList = dashboardService.getLineChartMetrics(fetchedSessions)
+      const metricsList = dashboardService.getLineChartMetrics(filteredSessions)
       setLineChartMetrics(metricsList)
       
       const metricLabels: Record<string, string> = {}
@@ -208,8 +228,8 @@ export default function DashboardPage() {
     }
     
     fetchData()
-  }, [user, loading])
-  
+  }, [user, loading, selectedModels])
+
   // Set up real-time subscription for chat sessions
   useEffect(() => {
     if (!user || loading) return
@@ -277,7 +297,7 @@ export default function DashboardPage() {
         supabase.removeChannel(realtimeSubscriptionRef.current)
       }
     }
-  }, [user, loading])
+  }, [user, loading, selectedModels])
 
   // Show loading while checking auth status
   if (loading || loadingData) {
@@ -419,6 +439,25 @@ export default function DashboardPage() {
     return Math.min(100, (current / limit) * 100)
   }
 
+  // Toggle model selection
+  const toggleModelSelection = (modelId: string) => {
+    if (selectedModels.includes(modelId)) {
+      setSelectedModels(selectedModels.filter(id => id !== modelId))
+    } else {
+      setSelectedModels([...selectedModels, modelId])
+    }
+  }
+
+  // Select all models
+  const selectAllModels = () => {
+    setSelectedModels(availableModels.map(model => model.id))
+  }
+
+  // Clear all model selections
+  const clearAllModels = () => {
+    setSelectedModels([])
+  }
+
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
       darkMode 
@@ -456,6 +495,124 @@ export default function DashboardPage() {
                 
                 {/* Simple Profile Icon */}
                 <SimpleProfileIcon />
+                
+                {/* Filter Dropdown */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsFilterOpen(!isFilterOpen)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md ${
+                      darkMode 
+                        ? 'bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white border border-gray-600' 
+                        : 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 border border-gray-300'
+                    }`}
+                  >
+                    <Filter className="w-4 h-4" />
+                    <span className="font-medium">Filter</span>
+                  </button>
+                  
+                  {/* Dropdown menu for model filtering */}
+                  {isFilterOpen && (
+                    <div 
+                      className={`absolute right-0 w-80 rounded-xl shadow-xl z-20 overflow-hidden transform transition-all duration-200 ease-in-out mt-2 ${
+                        darkMode 
+                          ? 'bg-gray-800/95 border border-gray-700 backdrop-blur-xl' 
+                          : 'bg-white/95 border border-slate-200 backdrop-blur-xl'
+                      }`}
+                    >
+                      <div className="py-3">
+                        <div className={`px-4 py-3 border-b ${
+                          darkMode ? 'border-gray-700' : 'border-slate-200'
+                        }`}>
+                          <div className="flex justify-between items-center">
+                            <h3 className={`text-sm font-semibold ${
+                              darkMode ? 'text-gray-200' : 'text-slate-800'
+                            }`}>
+                              Filter by Models
+                            </h3>
+                            <div className="flex space-x-2">
+                              <button 
+                                onClick={selectAllModels}
+                                className={`text-xs px-2 py-1 rounded ${
+                                  darkMode 
+                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                              >
+                                Select All
+                              </button>
+                              <button 
+                                onClick={clearAllModels}
+                                className={`text-xs px-2 py-1 rounded ${
+                                  darkMode 
+                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                              >
+                                Clear
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto">
+                          {availableModels.map((model) => (
+                            <div 
+                              key={model.id}
+                              className={`px-4 py-2 flex items-center justify-between cursor-pointer transition-colors ${
+                                darkMode 
+                                  ? 'hover:bg-gray-700/50' 
+                                  : 'hover:bg-slate-100'
+                              } ${
+                                selectedModels.includes(model.id) 
+                                  ? darkMode 
+                                    ? 'bg-blue-900/30' 
+                                    : 'bg-blue-100'
+                                  : ''
+                              }`}
+                              onClick={() => toggleModelSelection(model.id)}
+                            >
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-3 h-3 rounded-full ${
+                                  selectedModels.includes(model.id) 
+                                    ? 'bg-blue-500' 
+                                    : darkMode 
+                                      ? 'bg-gray-500' 
+                                      : 'bg-gray-400'
+                                }`}></div>
+                                <span className={`text-sm ${
+                                  darkMode 
+                                    ? selectedModels.includes(model.id) 
+                                      ? 'text-white font-medium' 
+                                      : 'text-gray-300'
+                                    : selectedModels.includes(model.id) 
+                                      ? 'text-gray-900 font-medium' 
+                                      : 'text-gray-700'
+                                }`}>
+                                  {model.displayName}
+                                </span>
+                              </div>
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                darkMode 
+                                  ? 'bg-gray-700 text-gray-400' 
+                                  : 'bg-gray-200 text-gray-600'
+                              }`}>
+                                {model.provider}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className={`px-4 py-3 border-t ${
+                          darkMode ? 'border-gray-700' : 'border-slate-200'
+                        }`}>
+                          <div className="text-xs text-center">
+                            {selectedModels.length > 0 
+                              ? `${selectedModels.length} model${selectedModels.length > 1 ? 's' : ''} selected` 
+                              : 'No models selected (showing all)'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 {/* Export Dropdown - Modern Design */}
                 <div className="relative">

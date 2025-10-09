@@ -158,7 +158,6 @@ export default function SharedSidebar({
                 </Link>
               </div>
             </div>
-            <NotificationBell />
           </div>
 
           {/* New Chat Button */}
@@ -330,7 +329,7 @@ export default function SharedSidebar({
                     </div>
                   </button>
                   
-                  <Link href="/dashboard/profile">
+                  <Link href="/profile">
                     <div 
                       className={`flex items-center space-x-4 w-full px-5 py-3 text-left transition-all duration-200 ${
                         darkMode 

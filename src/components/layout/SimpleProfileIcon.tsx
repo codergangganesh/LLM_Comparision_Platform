@@ -177,7 +177,7 @@ export default function SimpleProfileIcon() {
                 </div>
               </button>
               
-              <Link href="/dashboard/profile">
+              <Link href="/profile">
                 <div 
                   className={`flex items-center space-x-4 w-full px-5 py-3 text-left transition-all duration-200 ${
                     darkMode 
