@@ -56,8 +56,20 @@ export class ChatHistoryService {
     }
   }
 
-  async getChatSessions(): Promise<ChatSession[] | null> {
+  // Add cache for chat sessions
+  private chatSessionsCache: ChatSession[] | null = null
+  private lastFetchTime: number | null = null
+  private readonly CACHE_DURATION = 5 * 60 * 1000 // 5 minutes cache
+
+  async getChatSessions(useCache = true): Promise<ChatSession[] | null> {
     try {
+      // Check if we have valid cached data
+      const now = Date.now()
+      if (useCache && this.chatSessionsCache && this.lastFetchTime && (now - this.lastFetchTime) < this.CACHE_DURATION) {
+        console.log('Using cached chat sessions')
+        return this.chatSessionsCache
+      }
+
       // Create a Supabase client that can access the current session
       const supabase = createClient()
       
@@ -92,13 +104,26 @@ export class ChatHistoryService {
         return null
       }
       
-      const chatSessions: ChatSession[] = await response.json()
+      const result = await response.json()
+      // Handle both old and new response formats
+      const chatSessions: ChatSession[] = Array.isArray(result) ? result : result.sessions
       console.log('Successfully fetched chat sessions:', chatSessions?.length || 0)
+      
+      // Update cache
+      this.chatSessionsCache = chatSessions
+      this.lastFetchTime = now
+      
       return chatSessions
     } catch (error) {
       console.error('Error fetching chat sessions - Network error:', error)
       return null
     }
+  }
+
+  // Method to clear cache
+  clearCache() {
+    this.chatSessionsCache = null
+    this.lastFetchTime = null
   }
 
   async deleteChatSession(sessionId: string): Promise<boolean> {

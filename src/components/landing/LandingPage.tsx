@@ -4,7 +4,8 @@ import React from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { useLoading } from '@/contexts/LoadingContext'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
+import { useSearchParams } from 'next/navigation'
 import { ArrowRight, MessageSquare, Zap, BarChart3, Shield, Clock, Users, Brain, Sparkles, Star, ChevronRight, Play, Globe, TrendingUp, Award, Infinity, Cpu, Layers, GitBranch, Settings as SettingsIcon, LogOut, Moon, Sun, DollarSign, MessageCircle } from 'lucide-react'
 import ModernModelShowcase from './ModernModelShowcase'
 import ModernFeedbackAndPricing from './ModernFeedbackAndPricing'
@@ -33,7 +34,7 @@ interface Step {
 export default function LandingPage() {
   const { user, signOut } = useAuth()
   const { showLoading, hideLoading } = useLoading()
-  const router = useRouter()
+  const router = useOptimizedRouter()
   const { darkMode, toggleDarkMode } = useDarkMode()
   const { openPaymentPopup } = usePopup()
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)

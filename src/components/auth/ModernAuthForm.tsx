@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Github } from 'lucide-react'
 
@@ -21,7 +22,7 @@ export default function ModernAuthForm() {
   const [successMessage, setSuccessMessage] = useState('')
 
   const { signIn, signUp, signInWithGoogle, signInWithGithub } = useAuth()
-  const router = useRouter()
+  const router = useOptimizedRouter()
   const searchParams = useSearchParams()
 
   // Check for success message from URL params

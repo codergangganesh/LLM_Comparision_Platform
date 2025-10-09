@@ -22,11 +22,31 @@ export async function GET(req: NextRequest) {
     
     console.log('GET - User authenticated:', user.id);
     
+    // Get query parameters for pagination
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '50', 10); // Default to 50, max 100
+    const clampedLimit = Math.min(limit, 100);
+    const offset = (page - 1) * clampedLimit;
+    
+    // First get count of total sessions
+    const { count, error: countError } = await supabase
+      .from('chat_sessions')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+      
+    if (countError) {
+      console.error('GET - Database count error:', countError);
+      return new Response(JSON.stringify({ error: countError.message }), { status: 500 });
+    }
+    
+    // Then get the sessions with pagination
     const { data, error } = await supabase
       .from('chat_sessions')
-      .select('*')
+      .select('id, message, timestamp, selected_models, responses, best_response, response_time')
       .eq('user_id', user.id)
-      .order('timestamp', { ascending: false });
+      .order('timestamp', { ascending: false })
+      .range(offset, offset + clampedLimit - 1);
       
     if (error) {
       console.error('GET - Database query error:', error);
@@ -46,7 +66,15 @@ export async function GET(req: NextRequest) {
       responseTime: session.response_time
     }));
     
-    return new Response(JSON.stringify(chatSessions), { status: 200 });
+    return new Response(JSON.stringify({
+      sessions: chatSessions,
+      pagination: {
+        page,
+        limit: clampedLimit,
+        total: count,
+        hasMore: offset + clampedLimit < (count || 0)
+      }
+    }), { status: 200 });
   } catch (error: any) {
     console.error('GET - Unexpected error:', error);
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });

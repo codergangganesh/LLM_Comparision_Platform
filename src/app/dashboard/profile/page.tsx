@@ -1,17 +1,42 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
+import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
+import OptimizedPageTransitionLoader from '@/components/ui/OptimizedPageTransitionLoader'
+import { useOptimizedLoading } from '@/contexts/OptimizedLoadingContext'
 import { Camera, User, Mail, Calendar, Shield, Bell, Palette, Globe, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react'
-import AdvancedSidebar from '@/components/layout/AdvancedSidebar'
+import SharedSidebar from '@/components/layout/SharedSidebar'
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
+  const router = useOptimizedRouter()
   const { darkMode, toggleDarkMode } = useDarkMode()
+  const { setPageLoading } = useOptimizedLoading()
   const [activeTab, setActiveTab] = useState('profile')
   const [showPassword, setShowPassword] = useState(false)
   
+  // Redirect unauthenticated users to the auth page
+  useEffect(() => {
+    if (!loading && !user) {
+      setPageLoading(true, "Redirecting to authentication...");
+      router.push('/auth')
+    } else if (user && !loading) {
+      setPageLoading(false);
+    }
+  }, [user, loading, router, setPageLoading])
+
+  // Show loading while checking auth status
+  if (loading) {
+    return <OptimizedPageTransitionLoader message="Loading profile..." />;
+  }
+
+  // Show nothing while redirecting
+  if (!user) {
+    return null;
+  }
+
   // Form data state
   const [formData, setFormData] = useState({
     name: user?.user_metadata?.full_name || '',
@@ -116,7 +141,7 @@ export default function ProfilePage() {
         ? 'bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'
     }`}>
-      <AdvancedSidebar />
+      <SharedSidebar />
       
       {/* Adjusted layout to match chat interface with flex and responsive margins */}
       <div className="lg:ml-80 ml-16 transition-all duration-300">

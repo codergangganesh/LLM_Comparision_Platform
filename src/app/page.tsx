@@ -1,25 +1,32 @@
 "use client";
 import LandingPage from "@/components/landing/LandingPage";
 import { useAuth } from "@/contexts/AuthContext";
-import PageTransitionLoader from "@/components/ui/PageTransitionLoader";
+import OptimizedPageTransitionLoader from "@/components/ui/OptimizedPageTransitionLoader";
 import { useState, useEffect } from "react";
+import { useOptimizedLoading } from "@/contexts/OptimizedLoadingContext";
 
 export default function Home() {
   const { user, loading: authLoading } = useAuth();
-  const [pageLoading, setPageLoading] = useState(true);
+  const { setPageLoading } = useOptimizedLoading();
+  const [pageLoading, setPageLoadingState] = useState(true);
 
   // Simulate page loading
   useEffect(() => {
+    setPageLoading(true, "Preparing your experience...");
     const timer = setTimeout(() => {
+      setPageLoadingState(false);
       setPageLoading(false);
-    }, 500);
+    }, 100);
     
-    return () => clearTimeout(timer);
-  }, []);
+    return () => {
+      clearTimeout(timer);
+      setPageLoading(false);
+    };
+  }, [setPageLoading]);
 
   // Show loading state while checking auth or page is loading
   if (authLoading || pageLoading) {
-    return <PageTransitionLoader isLoading={true} message="Preparing your experience..." />;
+    return <OptimizedPageTransitionLoader />;
   }
 
   // Show landing page for all users (authenticated or not)

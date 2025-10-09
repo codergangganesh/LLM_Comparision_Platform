@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
 import { useLoading } from '@/contexts/LoadingContext'
-import AdvancedSidebar from '@/components/layout/AdvancedSidebar'
-import { useRouter } from 'next/navigation'
+import SharedSidebar from '@/components/layout/SharedSidebar'
+import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
+import OptimizedPageTransitionLoader from '@/components/ui/OptimizedPageTransitionLoader'
+import { useOptimizedLoading } from '@/contexts/OptimizedLoadingContext'
 import { 
   User, 
   Shield, 
@@ -27,9 +29,10 @@ import {
 
 export default function SettingsPage() {
   const { user, loading, signOut } = useAuth()
-  const router = useRouter()
+  const router = useOptimizedRouter()
   const { darkMode, toggleDarkMode } = useDarkMode()
   const { showLoading, hideLoading } = useLoading()
+  const { setPageLoading } = useOptimizedLoading()
   const [activeTab, setActiveTab] = useState('profile')
   const [showPassword, setShowPassword] = useState(false)
   const [formData, setFormData] = useState({
@@ -55,8 +58,23 @@ export default function SettingsPage() {
   const [saveStatus, setSaveStatus] = useState<{type: 'success' | 'error' | null, message: string}>({type: null, message: ''})
 
   // Redirect unauthenticated users to the auth page
-  if (loading || !user) {
-    return null
+  useEffect(() => {
+    if (!loading && !user) {
+      setPageLoading(true, "Redirecting to authentication...");
+      router.push('/auth')
+    } else if (user && !loading) {
+      setPageLoading(false);
+    }
+  }, [user, loading, router, setPageLoading])
+
+  // Show loading while checking auth status
+  if (loading) {
+    return <OptimizedPageTransitionLoader message="Loading settings..." />;
+  }
+
+  // Show nothing while redirecting
+  if (!user) {
+    return null;
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -222,7 +240,7 @@ export default function SettingsPage() {
         ? 'bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'
     }`}>
-      <AdvancedSidebar />
+      <SharedSidebar />
       
       {/* Adjusted layout to match chat interface with flex and responsive margins */}
       <div className="lg:ml-80 ml-0 transition-all duration-300 pt-16 lg:pt-0">

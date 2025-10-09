@@ -99,10 +99,17 @@ export default function SharedSidebar({
   const handleClose = onDeletePopupClose || handleCloseDeletePopup
 
   return (
-    <div className="fixed left-0 top-0 h-full w-80 backdrop-blur-xl border-r transition-colors duration-200 z-10 bg-white/80 border-slate-200/50 dark:bg-gray-800/80 dark:border-gray-700">
+    // Updated sidebar background to match Chat/History pages
+    <div className={`fixed left-0 top-0 h-full w-80 backdrop-blur-xl border-r transition-all duration-300 z-10 ${
+      darkMode 
+        ? 'bg-gray-800/90 border-gray-700/50' 
+        : 'bg-white/90 border-slate-200/50'
+    }`}>
       <div className="flex flex-col h-full pb-20">
         {/* Header with Logo */}
-        <div className="p-6 border-b border-slate-200/30 dark:border-gray-700">
+        <div className={`p-6 border-b transition-colors duration-200 ${
+          darkMode ? 'border-gray-700' : 'border-slate-200/30'
+        }`}>
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
@@ -110,7 +117,11 @@ export default function SharedSidebar({
               </div>
               <div>
                 <Link href="/">
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent dark:from-white dark:to-gray-200">
+                  <h1 className={`text-xl font-bold bg-gradient-to-r bg-clip-text text-transparent transition-colors duration-200 ${
+                    darkMode 
+                      ? 'from-white to-gray-200' 
+                      : 'from-slate-900 to-slate-700'
+                  }`}>
                     AI Fiesta
                   </h1>
                 </Link>
@@ -135,10 +146,15 @@ export default function SharedSidebar({
         <div className="p-4 space-y-2">
           <Link
             href="/chat"
+            prefetch={true}
             className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
               pathname === '/chat'
-                ? 'dark:text-white dark:bg-gray-700/50 dark:border dark:border-gray-600 text-slate-900 bg-slate-100/50 border border-slate-200'
-                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700/50'
+                ? darkMode 
+                  ? 'text-white bg-gray-700/50 border border-gray-600' 
+                  : 'text-slate-900 bg-slate-100/50 border border-slate-200'
+                : darkMode 
+                  ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
             }`}
           >
             <MessageSquare className="w-5 h-5" />
@@ -147,10 +163,15 @@ export default function SharedSidebar({
           
           <Link
             href="/history"
+            prefetch={true}
             className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
               pathname === '/history'
-                ? 'dark:text-white dark:bg-gray-700/50 dark:border dark:border-gray-600 text-slate-900 bg-slate-100/50 border border-slate-200'
-                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700/50'
+                ? darkMode 
+                  ? 'text-white bg-gray-700/50 border border-gray-600' 
+                  : 'text-slate-900 bg-slate-100/50 border border-slate-200'
+                : darkMode 
+                  ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
             }`}
           >
             <Clock className="w-5 h-5" />
@@ -159,10 +180,15 @@ export default function SharedSidebar({
           
           <Link
             href="/dashboard"
+            prefetch={true}
             className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
               pathname === '/dashboard'
-                ? 'dark:text-white dark:bg-gray-700/50 dark:border dark:border-gray-600 text-slate-900 bg-slate-100/50 border border-slate-200'
-                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700/50'
+                ? darkMode 
+                  ? 'text-white bg-gray-700/50 border border-gray-600' 
+                  : 'text-slate-900 bg-slate-100/50 border border-slate-200'
+                : darkMode 
+                  ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
             }`}
           >
             <BarChart3 className="w-5 h-5" />
@@ -172,7 +198,11 @@ export default function SharedSidebar({
       </div>
       
       {/* Profile Section at Bottom */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-200/30 dark:border-gray-700 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl">
+      <div className={`absolute bottom-0 left-0 right-0 p-4 border-t transition-all duration-300 ${
+        darkMode 
+          ? 'bg-gray-800/90 border-gray-700/50 backdrop-blur-xl' 
+          : 'bg-white/90 border-slate-200/50 backdrop-blur-xl'
+      }`}>
         <div className="relative" ref={profileDropdownRef}>
           <div 
             className="flex items-center justify-between cursor-pointer hover:bg-gray-700/10 dark:hover:bg-gray-700/30 p-2 rounded-lg transition-all duration-300 ease-out"
@@ -201,9 +231,13 @@ export default function SharedSidebar({
             </div>
           </div>
           
-          {/* Modern Profile Dropdown Menu */}
+          {/* Modern Profile Dropdown Menu - Updated to match Chat/History styling */}
           {showProfileDropdown && (
-            <div className="absolute bottom-full right-0 mb-2 w-64 rounded-2xl border shadow-xl transition-all duration-300 transform origin-bottom bg-white border-slate-200/50 dark:bg-gray-800 dark:border-gray-700/50 backdrop-blur-xl overflow-hidden">
+            <div className={`absolute bottom-full right-0 mb-2 w-64 rounded-2xl border shadow-2xl transition-all duration-300 transform origin-bottom backdrop-blur-xl overflow-hidden ${
+              darkMode
+                ? 'bg-gray-800/90 border border-gray-700/50'
+                : 'bg-white/90 border border-slate-200/50'
+            }`}>
               <div className="py-2">
                 {/* User Profile Header */}
                 <div className="px-4 py-4 border-b border-slate-200/30 dark:border-gray-700/50 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-gray-700/30 dark:to-gray-800/30">
@@ -238,7 +272,7 @@ export default function SharedSidebar({
                     setShowProfileDropdown(false);
                     openPaymentPopup();
                   }}
-                  className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
+                  className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200 text-left"
                 >
                   <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
                     <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />

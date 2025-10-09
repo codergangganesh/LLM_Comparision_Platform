@@ -5,19 +5,30 @@ import AuthIllustration from '@/components/auth/AuthIllustration'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
+import OptimizedPageTransitionLoader from '@/components/ui/OptimizedPageTransitionLoader'
+import { useOptimizedLoading } from '@/contexts/OptimizedLoadingContext'
 import AIFiestaLogo from '@/components/landing/AIFiestaLogo'
 
 export default function AuthPage() {
-  const { user } = useAuth()
-  const router = useRouter()
+  const { user, loading } = useAuth()
+  const router = useOptimizedRouter()
+  const { setPageLoading } = useOptimizedLoading()
 
   // Redirect authenticated users to chat
   useEffect(() => {
     if (user) {
+      setPageLoading(true, "Redirecting to chat...");
       router.push('/chat')
+    } else if (!user && !loading) {
+      setPageLoading(false);
     }
-  }, [user, router])
+  }, [user, router, loading, setPageLoading])
+
+  // Show loading while checking auth status
+  if (loading) {
+    return <OptimizedPageTransitionLoader message="Loading authentication..." />;
+  }
 
   if (user) {
     return null // or a loading spinner while redirecting

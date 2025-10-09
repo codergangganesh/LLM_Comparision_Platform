@@ -84,24 +84,7 @@ export default function DeleteAccountPopup({
                 <p className="mt-1 text-sm text-red-500">{error}</p>
               )}
             </div>
-            
-            <div className="flex items-center space-x-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg mb-4">
-              <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0" />
-              <p className="text-sm text-red-700 dark:text-red-300">
-                All your data will be permanently deleted and cannot be recovered.
-              </p>
-            </div>
-            
-            <div className="text-sm text-slate-600 dark:text-gray-400 bg-slate-50 dark:bg-gray-700/50 rounded-lg p-3">
-              <p className="font-medium mb-1">What happens when you delete your account:</p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li>All your personal data will be permanently removed</li>
-                <li>Your chat history and comparisons will be deleted</li>
-                <li>Your account credentials will be removed from our authentication system</li>
-                <li>All associated files and usage data will be erased</li>
-                <li>You'll need to create a new account to use the service again</li>
-              </ul>
-            </div>
+           
           </div>
           
           <div className="flex justify-end space-x-3 p-4 border-t border-slate-200/50 dark:border-gray-700">

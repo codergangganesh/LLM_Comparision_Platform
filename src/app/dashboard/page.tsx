@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
-import AdvancedSidebar from '@/components/layout/AdvancedSidebar'
+import SharedSidebar from '@/components/layout/SharedSidebar'
 import BarChart from '@/components/dashboard/BarChart'
 import LineChart from '@/components/dashboard/LineChart'
 import DonutChart from '@/components/dashboard/DonutChart'
 import ResponseTimeDistribution from '@/components/dashboard/ResponseTimeDistribution'
-import { useRouter } from 'next/navigation'
+import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
+import OptimizedPageTransitionLoader from '@/components/ui/OptimizedPageTransitionLoader'
+import { useOptimizedLoading } from '@/contexts/OptimizedLoadingContext'
 
 import {
   TrendingUp,
@@ -33,8 +35,9 @@ interface MetricCard {
 
 export default function DashboardPage() {
   const { user, loading } = useAuth()
-  const router = useRouter()
+  const router = useOptimizedRouter()
   const { darkMode } = useDarkMode()
+  const { setPageLoading } = useOptimizedLoading()
   const [metrics, setMetrics] = useState<MetricCard[]>([
     {
       title: 'Total Comparisons',
@@ -73,13 +76,21 @@ export default function DashboardPage() {
   // Redirect unauthenticated users to the auth page
   useEffect(() => {
     if (!loading && !user) {
+      setPageLoading(true, "Redirecting to authentication...");
       router.push('/auth')
+    } else if (user && !loading) {
+      setPageLoading(false);
     }
-  }, [user, loading, router])
+  }, [user, loading, router, setPageLoading])
 
-  // Show nothing while loading or redirecting
-  if (loading || !user) {
-    return null
+  // Show loading while checking auth status
+  if (loading) {
+    return <OptimizedPageTransitionLoader message="Loading dashboard..." />;
+  }
+
+  // Show nothing while redirecting
+  if (!user) {
+    return null;
   }
   
   const [usageData] = useState({
@@ -297,7 +308,7 @@ export default function DashboardPage() {
         ? 'bg-black' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'
     }`}>
-      <AdvancedSidebar />
+      <SharedSidebar />
       
       {/* Adjusted layout to match chat interface with flex and responsive margins */}
       <div className="lg:ml-80 ml-16 transition-all duration-300">

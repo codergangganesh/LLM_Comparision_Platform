@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Search, Clock, MessageSquare, Trash2, User, LogOut, Cog, Brain, Plus, BarChart3, ChevronDown, CreditCard, Moon, Sun, X, Filter, SortDesc, Calendar, ArrowUpDown, Sparkles, AlertCircle, Copy, Grid3X3, List, Check } from 'lucide-react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
@@ -26,6 +26,11 @@ interface ChatSession {
   responseTime?: number
 }
 
+// Add cache for chat sessions
+let chatSessionsCache: ChatSession[] | null = null
+let lastFetchTime: number | null = null
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes cache
+
 export default function ModernHistoryInterface() {
   const { signOut, user } = useAuth()
   const pathname = usePathname()
@@ -47,6 +52,8 @@ export default function ModernHistoryInterface() {
   const [showSortFilterDropdown, setShowSortFilterDropdown] = useState<'sort' | 'filter' | null>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [modalSession, setModalSession] = useState<ChatSession | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDeleteAccountConfirm = async (password: string) => {
     setIsDeleting(true)
@@ -64,11 +71,24 @@ export default function ModernHistoryInterface() {
     }
   }
 
-  // Load chat sessions from API
-  useEffect(() => {
-    const loadChatSessions = async () => {
+  // Optimized function to load chat sessions with caching
+  const loadChatSessions = useCallback(async () => {
+    // Check if we have valid cached data
+    const now = Date.now();
+    if (chatSessionsCache && lastFetchTime && (now - lastFetchTime) < CACHE_DURATION) {
+      console.log('Using cached chat sessions');
+      setChatSessions(chatSessionsCache);
+      setFilteredSessions(chatSessionsCache);
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    
+    try {
       // Try to load from API
-      const apiSessions = await chatHistoryService.getChatSessions()
+      const apiSessions = await chatHistoryService.getChatSessions();
       if (apiSessions) {
         // Convert to the format expected by the history interface
         const sessionsWithResponseCount: ChatSession[] = apiSessions.map((session: any) => ({
@@ -76,34 +96,53 @@ export default function ModernHistoryInterface() {
           // Ensure timestamp is a proper Date object
           timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
           responseCount: session.responses ? session.responses.length : 0
-        }))
-        setChatSessions(sessionsWithResponseCount)
-        setFilteredSessions(sessionsWithResponseCount)
-        return
+        }));
+        
+        // Update cache
+        chatSessionsCache = sessionsWithResponseCount;
+        lastFetchTime = now;
+        
+        setChatSessions(sessionsWithResponseCount);
+        setFilteredSessions(sessionsWithResponseCount);
+        setIsLoading(false);
+        return;
       }
       
       // Fallback to localStorage if no API sessions
-      const savedSessions = localStorage.getItem('aiFiestaChatSessions')
+      const savedSessions = localStorage.getItem('aiFiestaChatSessions');
       if (savedSessions) {
         try {
-          const parsedSessions = JSON.parse(savedSessions)
+          const parsedSessions = JSON.parse(savedSessions);
           // Convert timestamp strings back to Date objects
           const sessionsWithDates: ChatSession[] = parsedSessions.map((session: any) => ({
             ...session,
             // Ensure timestamp is a proper Date object
             timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
             responseCount: session.responses ? session.responses.length : 0
-          }))
-          setChatSessions(sessionsWithDates)
-          setFilteredSessions(sessionsWithDates)
+          }));
+          
+          // Update cache
+          chatSessionsCache = sessionsWithDates;
+          lastFetchTime = now;
+          
+          setChatSessions(sessionsWithDates);
+          setFilteredSessions(sessionsWithDates);
         } catch (e) {
-          console.error('Failed to parse saved sessions:', e)
+          console.error('Failed to parse saved sessions:', e);
         }
       }
+    } catch (err) {
+      console.error('Error loading chat sessions:', err);
+      setError('Failed to load chat history. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
 
-    loadChatSessions()
-  }, [])
+  // Load chat sessions from API with caching
+  useEffect(() => {
+    loadChatSessions();
+  }, [loadChatSessions]);
 
   // Filter and sort sessions based on search term, sort, and filter options
   useEffect(() => {
@@ -260,16 +299,16 @@ export default function ModernHistoryInterface() {
   }, [showSortFilterDropdown]);
 
   return (
-    <div className={`flex h-screen transition-colors duration-200 ${
+    <div className={`flex h-screen transition-all duration-700 ease-in-out ${
       darkMode 
-        ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
-        : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'
+        ? 'bg-gradient-to-br from-gray-900 via-violet-900/90 to-black' 
+        : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100'
     }`}>
       {/* Left Sidebar */}
-      <div className={`w-80 backdrop-blur-xl border-r transition-colors duration-200 relative ${
+      <div className={`w-80 backdrop-blur-xl border-r transition-all duration-300 relative ${
         darkMode 
-          ? 'bg-gray-800/80 border-gray-700' 
-          : 'bg-white/80 border-slate-200/50'
+          ? 'bg-gray-800/90 border-gray-700/50' 
+          : 'bg-white/90 border-slate-200/50'
       }`}>
         {/* Sidebar Content Container */}
         <div className="flex flex-col h-full pb-20">
@@ -382,10 +421,10 @@ export default function ModernHistoryInterface() {
         </div>
         
         {/* Profile Section at Bottom */}
-        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t transition-colors duration-200 ${
+        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t transition-all duration-300 ${
           darkMode 
-            ? 'bg-gray-800/95 border-gray-700 backdrop-blur-xl' 
-            : 'bg-white/95 border-slate-200/30 backdrop-blur-xl'
+            ? 'bg-gray-800/90 border-gray-700/50 backdrop-blur-xl' 
+            : 'bg-white/90 border-slate-200/50 backdrop-blur-xl'
         }`}>
           <div className="relative">
             <div 
@@ -418,7 +457,11 @@ export default function ModernHistoryInterface() {
             
             {/* Modern Profile Dropdown Menu */}
             {showProfileDropdown && (
-              <div className="absolute bottom-full right-0 mb-2 w-64 rounded-2xl border shadow-xl transition-all duration-300 transform origin-bottom bg-white border-slate-200/50 dark:bg-gray-800 dark:border-gray-700/50 backdrop-blur-xl overflow-hidden">
+              <div className={`absolute bottom-full right-0 mb-2 w-64 rounded-2xl shadow-2xl transition-all duration-300 transform origin-bottom backdrop-blur-xl overflow-hidden ${
+                darkMode
+                  ? 'bg-gray-800/90 border border-gray-700/50'
+                  : 'bg-white/90 border border-slate-200/50'
+              }`}>
                 <div className="py-2">
                   {/* User Profile Header */}
                   <div className="px-4 py-4 border-b border-slate-200/30 dark:border-gray-700/50 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-gray-700/30 dark:to-gray-800/30">
@@ -549,10 +592,10 @@ export default function ModernHistoryInterface() {
       {/* Main History Area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <div className={`backdrop-blur-sm border-b p-6 transition-colors duration-200 z-50 ${
+        <div className={`backdrop-blur-xl border-b p-6 transition-all duration-300 z-50 ${
           darkMode 
-            ? 'bg-gray-800/60 border-gray-700/30' 
-            : 'bg-white/60 border-slate-200/30'
+            ? 'bg-gray-800/80 border-gray-700/50' 
+            : 'bg-white/80 border-slate-200/50'
         }`}>
           <div className="max-w-7xl mx-auto">
             <h1 className={`text-2xl font-bold mb-4 transition-colors duration-200 ${
@@ -573,7 +616,7 @@ export default function ModernHistoryInterface() {
                   placeholder="Search history..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all duration-200 text-sm placeholder:text-slate-500 ${
+                  className={`w-full pl-10 pr-4 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all duration-300 text-sm placeholder:text-slate-500 backdrop-blur-sm ${
                     darkMode 
                       ? 'bg-gray-700/50 border border-gray-600/50 text-white placeholder:text-gray-400 hover:bg-gray-700/70' 
                       : 'bg-white border border-slate-200/50 text-slate-900 hover:border-slate-300/50'
@@ -583,15 +626,41 @@ export default function ModernHistoryInterface() {
               
               {/* Sort and Filter Controls */}
               <div className="flex items-center space-x-3 relative">
+                {/* Refresh Button */}
+                <button
+                  onClick={() => {
+                    // Clear cache and reload
+                    chatSessionsCache = null;
+                    lastFetchTime = null;
+                    chatHistoryService.clearCache();
+                    loadChatSessions();
+                  }}
+                  className={`p-3 rounded-xl transition-all duration-300 flex items-center space-x-2 backdrop-blur-sm ${
+                    darkMode 
+                      ? 'bg-gray-800/60 border border-gray-700/50 text-gray-300 hover:bg-gray-700/80 hover:border-gray-600/70 hover:shadow-lg' 
+                      : 'bg-white/80 border border-slate-200/50 text-slate-700 hover:border-slate-300/70 hover:shadow-lg'
+                  }`}
+                  title="Refresh history"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                  <span className="hidden sm:inline font-medium">Refresh</span>
+                </button>
+                
                 {/* Delete All Button - Only show when there are sessions */}
                 {chatSessions.length > 0 && (
                   <button
                     onClick={() => setShowDeleteAllPopup(true)}
-                    className={`p-3 rounded-xl transition-colors duration-200 flex items-center space-x-2 bg-red-500 hover:bg-red-600 text-white font-medium`}
+                    className={`p-3 rounded-xl transition-all duration-300 flex items-center space-x-2 backdrop-blur-sm ${
+                      darkMode 
+                        ? 'bg-red-600/80 hover:bg-red-700/90 text-white border border-red-500/30 hover:border-red-400/50 hover:shadow-lg' 
+                        : 'bg-red-500 hover:bg-red-600 text-white border border-red-400/30 hover:border-red-300/50 hover:shadow-lg'
+                    }`}
                     title="Delete all history"
                   >
                     <Trash2 className="w-5 h-5" />
-                    <span className="hidden sm:inline">Delete All</span>
+                    <span className="hidden sm:inline font-medium">Delete All</span>
                   </button>
                 )}
                 
@@ -612,10 +681,10 @@ export default function ModernHistoryInterface() {
                   
                   {/* Sort Dropdown Menu */}
                   {showSortFilterDropdown === 'sort' && (
-                    <div id="sort-dropdown" className={`absolute right-0 mt-2 w-48 rounded-xl border shadow-xl z-[9999] overflow-hidden ${
+                    <div id="sort-dropdown" className={`absolute right-0 mt-2 w-48 rounded-2xl border shadow-2xl z-[9999] overflow-hidden backdrop-blur-xl ${
                       darkMode 
-                        ? 'bg-gray-800/95 border-gray-700/50 backdrop-blur-xl' 
-                        : 'bg-white/95 border-slate-200/50 backdrop-blur-xl'
+                        ? 'bg-gray-800/90 border-gray-700/50' 
+                        : 'bg-white/90 border-slate-200/50'
                     }`}>
                       <div className="py-2">
                         <div className="px-4 py-2">
@@ -709,10 +778,10 @@ export default function ModernHistoryInterface() {
                   
                   {/* Filter Dropdown Menu */}
                   {showSortFilterDropdown === 'filter' && (
-                    <div id="filter-dropdown" className={`absolute right-0 mt-2 w-48 rounded-xl border shadow-xl z-[9999] overflow-hidden ${
+                    <div id="filter-dropdown" className={`absolute right-0 mt-2 w-48 rounded-2xl border shadow-2xl z-[9999] overflow-hidden backdrop-blur-xl ${
                       darkMode 
-                        ? 'bg-gray-800/95 border-gray-700/50 backdrop-blur-xl' 
-                        : 'bg-white/95 border-slate-200/50 backdrop-blur-xl'
+                        ? 'bg-gray-800/90 border-gray-700/50' 
+                        : 'bg-white/90 border-slate-200/50'
                     }`}>
                       <div className="py-2">
                         <div className={`px-4 py-2 border-t ${
@@ -785,7 +854,47 @@ export default function ModernHistoryInterface() {
         <div className="flex-1 overflow-hidden">
           <div className="h-full p-6">
             <div className="max-w-7xl mx-auto h-full flex flex-col">
-              {filteredSessions.length === 0 ? (
+              {isLoading ? (
+                <div className="h-full flex flex-col items-center justify-center">
+                  <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-6"></div>
+                  <h2 className={`text-2xl font-bold mb-2 transition-colors duration-200 ${
+                    darkMode ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    Loading history...
+                  </h2>
+                  <p className={`text-lg transition-colors duration-200 ${
+                    darkMode ? 'text-gray-400' : 'text-slate-600'
+                  }`}>
+                    Retrieving your chat history
+                  </p>
+                </div>
+              ) : error ? (
+                <div className="h-full flex flex-col items-center justify-center">
+                  <div className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-6 backdrop-blur-sm ${
+                    darkMode ? 'bg-gray-800/50' : 'bg-white/50'
+                  }`}>
+                    <AlertCircle className={`w-12 h-12 ${
+                      darkMode ? 'text-red-500' : 'text-red-500'
+                    }`} />
+                  </div>
+                  <h2 className={`text-2xl font-bold mb-2 transition-colors duration-200 ${
+                    darkMode ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    Error Loading History
+                  </h2>
+                  <p className={`text-lg mb-6 text-center max-w-md transition-colors duration-200 ${
+                    darkMode ? 'text-gray-400' : 'text-slate-600'
+                  }`}>
+                    {error}
+                  </p>
+                  <button 
+                    onClick={() => loadChatSessions()}
+                    className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              ) : filteredSessions.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center">
                   <div className={`w-24 h-24 rounded-3xl flex items-center justify-center mb-6 backdrop-blur-sm ${
                     darkMode ? 'bg-gray-800/50' : 'bg-white/50'
@@ -859,10 +968,10 @@ export default function ModernHistoryInterface() {
                       {filteredSessions.map((session: ChatSession) => (
                         <div 
                           key={session.id}
-                          className={`rounded-2xl border transition-all duration-300 hover:shadow-xl hover:-translate-y-1 backdrop-blur-sm overflow-hidden ${
+                          className={`rounded-2xl border transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 backdrop-blur-sm overflow-hidden ${
                             darkMode
-                              ? 'bg-gradient-to-br from-gray-800/50 to-gray-900/50 border-gray-700/50 hover:border-gray-600/70'
-                              : 'bg-gradient-to-br from-white/50 to-slate-50/50 border-slate-200/50 hover:border-slate-300/70'
+                              ? 'bg-gradient-to-br from-gray-800/60 to-gray-900/60 border-gray-700/50 hover:border-gray-600/70'
+                              : 'bg-gradient-to-br from-white/60 to-slate-50/60 border-slate-200/50 hover:border-slate-300/70'
                           }`}
                         >
                           <div 
@@ -989,10 +1098,10 @@ export default function ModernHistoryInterface() {
                       {filteredSessions.map((session: ChatSession) => (
                         <div 
                           key={session.id}
-                          className={`rounded-2xl border transition-all duration-200 backdrop-blur-sm ${
+                          className={`rounded-2xl border transition-all duration-300 backdrop-blur-sm ${
                             darkMode
-                              ? 'bg-gray-800/50 border-gray-700/50 hover:border-gray-600/50'
-                              : 'bg-white/50 border-slate-200/50 hover:border-slate-300/50'
+                              ? 'bg-gray-800/60 border-gray-700/50 hover:border-gray-600/70 hover:shadow-xl'
+                              : 'bg-white/60 border-slate-200/50 hover:border-slate-300/70 hover:shadow-lg'
                           }`}
                         >
                           <div 
@@ -1091,11 +1200,11 @@ export default function ModernHistoryInterface() {
       
       {/* Delete All Confirmation Popup */}
       {showDeleteAllPopup && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className={`rounded-2xl border shadow-xl max-w-md w-full ${
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`rounded-2xl border shadow-2xl max-w-md w-full backdrop-blur-xl ${
             darkMode 
-              ? 'bg-gray-800 border-gray-700' 
-              : 'bg-white border-slate-200'
+              ? 'bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-700/50' 
+              : 'bg-gradient-to-br from-white/80 to-gray-100/80 border-slate-200/50'
           }`}>
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
@@ -1108,7 +1217,7 @@ export default function ModernHistoryInterface() {
                   onClick={() => setShowDeleteAllPopup(false)}
                   className={`p-2 rounded-lg transition-colors duration-200 ${
                     darkMode 
-                      ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+                      ? 'text-gray-400 hover:text-white hover:bg-gray-700/50' 
                       : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
                   }`}
                 >
@@ -1135,7 +1244,7 @@ export default function ModernHistoryInterface() {
                 </button>
                 <button
                   onClick={handleDeleteAllSessions}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors duration-200"
+                  className="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-medium transition-all duration-200 shadow-lg hover:shadow-xl"
                 >
                   Delete All
                 </button>

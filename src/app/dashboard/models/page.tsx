@@ -3,24 +3,35 @@
 import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
-import AdvancedSidebar from '@/components/layout/AdvancedSidebar'
-import { useRouter } from 'next/navigation'
+import SharedSidebar from '@/components/layout/SharedSidebar'
+import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
+import OptimizedPageTransitionLoader from '@/components/ui/OptimizedPageTransitionLoader'
+import { useOptimizedLoading } from '@/contexts/OptimizedLoadingContext'
 
 export default function ModelsPage() {
   const { user, loading } = useAuth()
-  const router = useRouter()
+  const router = useOptimizedRouter()
   const { darkMode } = useDarkMode()
+  const { setPageLoading } = useOptimizedLoading()
 
   // Redirect unauthenticated users to the auth page
   useEffect(() => {
     if (!loading && !user) {
+      setPageLoading(true, "Redirecting to authentication...");
       router.push('/auth')
+    } else if (user && !loading) {
+      setPageLoading(false);
     }
-  }, [user, loading, router])
+  }, [user, loading, router, setPageLoading])
 
-  // Show nothing while loading or redirecting
-  if (loading || !user) {
-    return null
+  // Show loading while checking auth status
+  if (loading) {
+    return <OptimizedPageTransitionLoader message="Loading models..." />;
+  }
+
+  // Show nothing while redirecting
+  if (!user) {
+    return null;
   }
 
   return (
@@ -29,7 +40,7 @@ export default function ModelsPage() {
         ? 'bg-gradient-to-br from-gray-900 via-blue-900 to-indigo-900' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'
     }`}>
-      <AdvancedSidebar />
+      <SharedSidebar />
       
       <div className="ml-16 lg:ml-72 transition-all duration-300">
         <div className={`backdrop-blur-sm border-b transition-colors duration-200 ${
