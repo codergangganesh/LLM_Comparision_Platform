@@ -258,35 +258,6 @@ export default function ProfileDropdown({
                 </div>
               </Link>
               
-              <Link href="/dashboard/settings">
-                <div 
-                  className={`flex items-center space-x-4 w-full px-5 py-3 text-left transition-all duration-200 ${
-                    darkMode 
-                      ? 'hover:bg-violet-500/10' 
-                      : 'hover:bg-violet-50'
-                  }`}
-                  onClick={() => {
-                    setIsOpen(false);
-                  }}
-                >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
-                    darkMode 
-                      ? 'bg-violet-500/20 text-violet-400' 
-                      : 'bg-violet-100 text-violet-600'
-                  }`}>
-                    <Settings className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className={`font-medium ${
-                      darkMode ? 'text-gray-200' : 'text-gray-800'
-                    }`}>Settings</p>
-                    <p className={`text-xs ${
-                      darkMode ? 'text-gray-400' : 'text-gray-500'
-                    }`}>Configure preferences</p>
-                  </div>
-                </div>
-              </Link>
-              
               {/* Theme Toggle */}
               <div 
                 className={`flex items-center justify-between px-5 py-3 transition-all duration-200 ${

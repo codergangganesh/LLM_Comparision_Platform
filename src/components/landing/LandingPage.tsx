@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
 import { useSearchParams } from 'next/navigation'
-import { ArrowRight, MessageSquare, Zap, BarChart3, Shield, Clock, Users, Brain, Sparkles, Star, ChevronRight, Play, Globe, TrendingUp, Award, Infinity, Cpu, Layers, GitBranch, Settings as SettingsIcon, LogOut, Moon, Sun, DollarSign, MessageCircle } from 'lucide-react'
+import { ArrowRight, MessageSquare, Zap, BarChart3, Shield, Clock, Users, Brain, Sparkles, Star, ChevronRight, Play, Globe, TrendingUp, Award, Infinity, Cpu, Layers, GitBranch, Settings as SettingsIcon, LogOut, Moon, Sun, DollarSign, MessageCircle, User as UserIcon } from 'lucide-react'
 import ModernModelShowcase from './ModernModelShowcase'
 import ModernFeedbackAndPricing from './ModernFeedbackAndPricing'
 import { useEffect, useState } from 'react'
@@ -341,14 +341,14 @@ export default function LandingPage() {
                           <span>Chat</span>
                         </Link>
                         <Link
-                          href="/dashboard/settings"
+                          href="/dashboard/profile"
                           className={`flex items-center space-x-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
                             darkMode
                               ? 'text-gray-200 hover:bg-gray-700/80'
                               : 'text-slate-700 hover:bg-slate-100'
                           }`}>
-                          <SettingsIcon className="w-4 h-4" />
-                          <span>Settings</span>
+                          <UserIcon className="w-4 h-4" />
+                          <span>Profile</span>
                         </Link>
                         <div className={`border-t my-2 ${
                           darkMode ? 'border-gray-700/50' : 'border-slate-200/50'

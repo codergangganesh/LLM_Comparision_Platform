@@ -25,7 +25,7 @@ export const AVAILABLE_MODELS: AiModel[] = [
     capabilities: ["text", "code", "image"]
   },
   { 
-    id: "qwen/qwen3-8b:free", 
+    id: "qwen/qwen3-4b:free", 
     label: "Claud 2.5", 
     provider: "Anthropic", 
     contextWindowK: 2000,
