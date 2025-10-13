@@ -26,12 +26,8 @@ import {
   Download,
   Bell,
   Filter,
-  Calendar,
-  Clock,
   MessageSquare,
-  Database,
-  RefreshCw,
-  Pause
+  Database
 } from 'lucide-react'
 import SimpleProfileIcon from '@/components/layout/SimpleProfileIcon'
 import NotificationBell from '@/components/ui/NotificationBell'
@@ -52,7 +48,6 @@ export default function DashboardPage() {
   const { setPageLoading } = useOptimizedLoading()
   const supabase = createClient()
   const realtimeSubscriptionRef = useRef<any>(null)
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
   
   const [metrics, setMetrics] = useState<MetricCard[]>([
     {
@@ -101,10 +96,6 @@ export default function DashboardPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [selectedModels, setSelectedModels] = useState<string[]>([])
   const [availableModels, setAvailableModels] = useState<any[]>([])
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
-  const [autoRefresh, setAutoRefresh] = useState(true)
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [hasUsedModels, setHasUsedModels] = useState(false)
   
   const [responseTimeData, setResponseTimeData] = useState<{name: string; value: number; color: string}[]>([])
@@ -137,24 +128,18 @@ export default function DashboardPage() {
     setAvailableModels(AI_MODELS)
   }, [])
 
-  // Filter sessions based on selected models and time range
-  const filterSessions = (sessions: ChatSession[], models: string[], range: '7d' | '30d' | '90d'): ChatSession[] => {
-    // First filter by models
+  // Filter sessions based on selected models
+  const filterSessions = (sessions: ChatSession[], models: string[]): ChatSession[] => {
+    // Filter by models
     let filteredSessions = models.length === 0 ? sessions : sessions.filter(session => 
       session.selectedModels?.some(model => models.includes(model))
     )
-    
-    // Then filter by time range
-    filteredSessions = dashboardService.filterSessionsByDateRange(filteredSessions, 
-      range === '7d' ? 7 : range === '30d' ? 30 : 90)
     
     return filteredSessions
   }
 
   // Function to update dashboard data
   const updateDashboardData = async (fetchedSessions: ChatSession[] | null = null) => {
-    setIsRefreshing(true)
-    
     try {
       // If no sessions provided, fetch them
       const sessionsToUse = fetchedSessions || await dashboardService.getChatSessions(false)
@@ -164,8 +149,8 @@ export default function DashboardPage() {
         const hasSessions = sessionsToUse.length > 0
         setHasUsedModels(hasSessions)
         
-        // Filter sessions based on selected models and time range
-        const filteredSessions = filterSessions(sessionsToUse, selectedModels, timeRange)
+        // Filter sessions based on selected models only (removed timeRange)
+        const filteredSessions = filterSessions(sessionsToUse, selectedModels)
         setSessions(filteredSessions)
         
         // Calculate metrics based on actual session data
@@ -231,12 +216,11 @@ export default function DashboardPage() {
         setLineChartMetricLabels(metricLabels)
         
         // Update last updated time
-        setLastUpdated(new Date())
+        // setLastUpdated(new Date()) - Removed as we're removing the last updated display
       }
     } catch (error) {
       console.error('Error updating dashboard data:', error)
     } finally {
-      setIsRefreshing(false)
       setLoadingData(false)
     }
   }
@@ -328,29 +312,6 @@ export default function DashboardPage() {
     }
   }, [user, loading])
 
-  // Set up auto-refresh interval
-  useEffect(() => {
-    if (autoRefresh) {
-      refreshIntervalRef.current = setInterval(async () => {
-        if (!user || loading) return
-        dashboardService.clearCache()
-        const fetchedSessions = await dashboardService.getChatSessions(false)
-        await updateDashboardData(fetchedSessions || [])
-      }, 30000) // Refresh every 30 seconds
-    } else {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current)
-        refreshIntervalRef.current = null
-      }
-    }
-
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current)
-      }
-    }
-  }, [autoRefresh, user, loading, selectedModels, timeRange])
-
   // Handle filter changes
   useEffect(() => {
     if (!user || loading) return
@@ -368,7 +329,7 @@ export default function DashboardPage() {
     }
     
     updateFilteredData()
-  }, [selectedModels, timeRange, user, loading])
+  }, [selectedModels, user, loading])
   
   // Show loading while checking auth status
   if (loading || loadingData) {
@@ -529,24 +490,6 @@ export default function DashboardPage() {
     setSelectedModels([])
   }
 
-  // Toggle auto-refresh
-  const toggleAutoRefresh = () => {
-    setAutoRefresh(!autoRefresh)
-  }
-
-  // Manual refresh
-  const handleManualRefresh = async () => {
-    if (isRefreshing) return
-    dashboardService.clearCache()
-    const fetchedSessions = await dashboardService.getChatSessions(false)
-    await updateDashboardData(fetchedSessions || [])
-  }
-
-  // Get formatted last updated time
-  const getFormattedLastUpdated = () => {
-    return lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  }
-
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
       darkMode 
@@ -592,71 +535,7 @@ export default function DashboardPage() {
                 {/* Simple Profile Icon */}
                 <SimpleProfileIcon />
                 
-                {/* Auto-refresh toggle */}
-                <button 
-                  onClick={toggleAutoRefresh}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-200 shadow-sm ${
-                    autoRefresh 
-                      ? darkMode 
-                        ? 'bg-green-900/30 text-green-400 border border-green-700/30' 
-                        : 'bg-green-100 text-green-700 border border-green-200'
-                      : darkMode 
-                        ? 'bg-gray-700 text-gray-300 border border-gray-600' 
-                        : 'bg-gray-100 text-gray-700 border border-gray-300'
-                  }`}
-                  title={autoRefresh ? "Disable auto-refresh" : "Enable auto-refresh"}
-                >
-                  {autoRefresh ? (
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Pause className="w-4 h-4" />
-                  )}
-                  <span className="text-sm font-medium hidden md:inline">
-                    {autoRefresh ? "Auto" : "Paused"}
-                  </span>
-                </button>
-                
-                {/* Manual refresh */}
-                <button 
-                  onClick={handleManualRefresh}
-                  disabled={isRefreshing}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-200 shadow-sm ${
-                    darkMode 
-                      ? 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600' 
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300'
-                  }`}
-                  title="Refresh dashboard"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  <span className="text-sm font-medium hidden md:inline">
-                    Refresh
-                  </span>
-                </button>
-                
-               {/* Time Range Selector */}
-<div className="relative">
-  <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 shadow-sm ${
-    darkMode 
-      ? 'bg-gradient-to-r from-gray-800 to-gray-900 text-white border border-gray-700' 
-      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300'
-  }`}>
-    <Calendar className={`w-4 h-4 ${darkMode ? 'text-white' : 'text-gray-800'}`} />
-    <select 
-      value={timeRange}
-      onChange={(e) => setTimeRange(e.target.value as any)}
-      className={`bg-transparent text-sm font-medium focus:outline-none ${
-        darkMode ? 'text-white' : 'text-gray-800'
-      }`}
-    >
-      <option value="7d">Last 7 days</option>
-      <option value="30d">Last 30 days</option>
-      <option value="90d">Last 90 days</option>
-    </select>
-  </div>
-</div>
-
-                
-                {/* Filter Dropdown */}
+                {/* Filter Dropdown - Moved to be next to Export */}
                 <div className="relative">
                   <button 
                     onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -884,23 +763,6 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-            </div>
-            
-            {/* Last updated info */}
-            <div className={`mt-2 text-xs flex items-center ${
-              darkMode ? 'text-gray-400' : 'text-gray-500'
-            }`}>
-              <RefreshCw className="w-3 h-3 mr-1" />
-              <span>Last updated: {getFormattedLastUpdated()}</span>
-              {autoRefresh && (
-                <span className="ml-2 flex items-center">
-                  <span className="flex h-2 w-2 mr-1">
-                    <span className="animate-ping absolute h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative h-2 w-2 rounded-full bg-green-500"></span>
-                  </span>
-                  Auto-refreshing
-                </span>
-              )}
             </div>
           </div>
         </div>

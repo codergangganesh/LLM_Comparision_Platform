@@ -1,6 +1,7 @@
 import { ChatSession } from '../types/chat'
 import { AiModel, AVAILABLE_MODELS } from '../lib/models'
 import { DashboardMetrics, UsageData, ModelUsageData, TimeSeriesData } from '../types/dashboard'
+import { chatHistoryService } from './chatHistory.service'
 
 // Predefined distinct colors for consistent model coloring
 const DISTINCT_COLORS = [
@@ -470,6 +471,25 @@ export class DashboardService {
       const sessionDate = new Date(session.timestamp);
       return sessionDate >= startDate && sessionDate <= endDate;
     });
+  }
+  
+  // Filter sessions by date range (in days)
+  filterSessionsByDateRange(sessions: ChatSession[], days: number): ChatSession[] {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
+    return this.getSessionsByDateRange(sessions, startDate, endDate);
+  }
+  
+  // Get chat sessions - this method was missing
+  async getChatSessions(useCache = true): Promise<ChatSession[] | null> {
+    try {
+      return await chatHistoryService.getChatSessions(useCache);
+    } catch (error) {
+      console.error('Error fetching chat sessions in dashboard service:', error);
+      return null;
+    }
   }
 }
 
