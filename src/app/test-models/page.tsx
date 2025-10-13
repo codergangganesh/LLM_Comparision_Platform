@@ -5,7 +5,7 @@ import { useDarkMode } from '@/contexts/DarkModeContext'
 
 export default function TestModelsPage() {
   const { darkMode } = useDarkMode()
-  const [modelData, setModelData] = useState<any>(null)
+  const [modelData, setModelData] = useState<{availableModels: Array<{id: string, name: string, description: string}>, unavailableModels: string[], totalModels: number, allModelsAvailable: boolean} | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -95,7 +95,7 @@ export default function TestModelsPage() {
                     These models are available and should work correctly:
                   </p>
                   <ul className="space-y-2">
-                    {modelData.availableModels.map((model: any) => (
+                    {modelData.availableModels.map((model) => (
                       <li 
                         key={model.id} 
                         className={`flex items-start space-x-2 transition-colors duration-200 ${

@@ -19,7 +19,7 @@ interface ChatResponse {
 }
 
 export default function EnhancedChatInterface() {
-  const { darkMode } = useDarkMode()
+  const { darkMode, toggleDarkMode } = useDarkMode()
   const [message, setMessage] = useState('')
   const [responses, setResponses] = useState<ChatResponse[]>([])
   const [loading, setLoading] = useState<string[]>([])
@@ -87,7 +87,7 @@ export default function EnhancedChatInterface() {
       if (!response.ok) throw new Error('Failed to send message')
       
       const data = await response.json()
-      const enhancedResponses = data.responses.map((r: any) => ({
+      const enhancedResponses = data.responses.map((r: {model: string, content: string, error?: string, success: boolean}) => ({
         ...r,
         wordCount: r.content?.split(' ').length || 0,
         latency: Math.random() * 2000 + 500,
@@ -129,8 +129,6 @@ export default function EnhancedChatInterface() {
       reader.readAsText(file)
     }
   }
-
-  const toggleDarkMode = () => setDarkMode(!darkMode)
 
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
@@ -297,12 +295,7 @@ export default function EnhancedChatInterface() {
                     error={response?.error}
                     isBestResponse={bestResponse === modelId}
                     onMarkBest={() => setBestResponse(bestResponse === modelId ? null : modelId)}
-                    darkMode={darkMode}
-                    metrics={{
-                      wordCount: response?.wordCount || 0,
-                      latency: response?.latency || 0,
-                      cost: response?.cost || 0
-                    }}
+                    responseTime={response?.latency}
                   />
                 )
               })}

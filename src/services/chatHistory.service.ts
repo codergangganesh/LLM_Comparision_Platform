@@ -2,6 +2,12 @@ import { ChatSession } from '@/types/chat'
 import { createClient } from '@/utils/supabase/client'
 
 export class ChatHistoryService {
+  // Add cache for chat sessions with expiration
+  private chatSessionsCache: ChatSession[] | null = null
+  private lastFetchTime: number | null = null
+  private readonly CACHE_DURATION = 5 * 60 * 1000 // 5 minutes cache
+  private isFetching = false // Prevent concurrent fetches
+
   async saveChatSession(session: ChatSession): Promise<boolean> {
     try {
       // Create a Supabase client that can access the current session
@@ -49,17 +55,16 @@ export class ChatHistoryService {
 
       const result = await response.json()
       console.log('Successfully saved chat session:', result)
+      
+      // Invalidate cache after successful save
+      this.clearCache()
+      
       return true
     } catch (error) {
       console.error('Error saving chat session - Network error:', error)
       return false
     }
   }
-
-  // Add cache for chat sessions
-  private chatSessionsCache: ChatSession[] | null = null
-  private lastFetchTime: number | null = null
-  private readonly CACHE_DURATION = 5 * 60 * 1000 // 5 minutes cache
 
   async getChatSessions(useCache = true): Promise<ChatSession[] | null> {
     try {
@@ -70,6 +75,18 @@ export class ChatHistoryService {
         return this.chatSessionsCache
       }
 
+      // Prevent concurrent fetches
+      if (this.isFetching) {
+        // Wait a bit and try to get cached data
+        await new Promise(resolve => setTimeout(resolve, 100))
+        if (this.chatSessionsCache) {
+          return this.chatSessionsCache
+        }
+        // If still no cache, continue with fetch
+      }
+
+      this.isFetching = true
+
       // Create a Supabase client that can access the current session
       const supabase = createClient()
       
@@ -78,6 +95,7 @@ export class ChatHistoryService {
       
       if (sessionError || !userSession) {
         console.error('Error fetching chat sessions - No valid session:', sessionError?.message || 'No session found')
+        this.isFetching = false
         return null
       }
       
@@ -101,6 +119,7 @@ export class ChatHistoryService {
         } catch (e) {
           console.error('Error fetching chat sessions - Could not parse error as JSON:', errorText)
         }
+        this.isFetching = false
         return null
       }
       
@@ -113,9 +132,11 @@ export class ChatHistoryService {
       this.chatSessionsCache = chatSessions
       this.lastFetchTime = now
       
+      this.isFetching = false
       return chatSessions
     } catch (error) {
       console.error('Error fetching chat sessions - Network error:', error)
+      this.isFetching = false
       return null
     }
   }
@@ -170,6 +191,10 @@ export class ChatHistoryService {
 
       const result = await response.json()
       console.log('Successfully deleted chat session:', result)
+      
+      // Invalidate cache after successful delete
+      this.clearCache()
+      
       return true
     } catch (error) {
       console.error('Error deleting chat session - Network error:', error)

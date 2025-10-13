@@ -92,7 +92,7 @@ export default function ModernHistoryInterface() {
       const apiSessions = await chatHistoryService.getChatSessions();
       if (apiSessions) {
         // Convert to the format expected by the history interface
-        const sessionsWithResponseCount: ChatSession[] = apiSessions.map((session: any) => ({
+        const sessionsWithResponseCount: ChatSession[] = apiSessions.map((session: {id: string, message: string, responses: ChatResponse[], timestamp: string | Date, selectedModels: string[], bestResponse?: string, responseTime?: number}) => ({
           ...session,
           // Ensure timestamp is a proper Date object
           timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
@@ -115,7 +115,7 @@ export default function ModernHistoryInterface() {
         try {
           const parsedSessions = JSON.parse(savedSessions);
           // Convert timestamp strings back to Date objects
-          const sessionsWithDates: ChatSession[] = parsedSessions.map((session: any) => ({
+          const sessionsWithDates: ChatSession[] = parsedSessions.map((session: {id: string, message: string, responses: ChatResponse[], timestamp: string | Date, selectedModels: string[], bestResponse?: string, responseTime?: number}) => ({
             ...session,
             // Ensure timestamp is a proper Date object
             timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
@@ -194,7 +194,7 @@ export default function ModernHistoryInterface() {
     if (savedSessions) {
       try {
         const parsedSessions = JSON.parse(savedSessions)
-        const updatedLocalSessions = parsedSessions.filter((session: any) => session.id !== id)
+        const updatedLocalSessions = parsedSessions.filter((session: {id: string, message: string, responses: ChatResponse[], timestamp: string | Date, selectedModels: string[], bestResponse?: string, responseTime?: number}) => session.id !== id)
         localStorage.setItem('aiFiestaChatSessions', JSON.stringify(updatedLocalSessions))
       } catch (e) {
         console.error('Failed to update localStorage:', e)

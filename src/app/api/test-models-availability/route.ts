@@ -41,18 +41,18 @@ export async function GET() {
       "nousresearch/hermes-3-llama-3.1-8b:free"
     ];
     
-    const availableModels = data.data.filter((model: any) => 
+    const availableModels = data.data.filter((model: { id: string }) => 
       ourModelIds.includes(model.id)
     );
 
     const unavailableModels = ourModelIds.filter(modelId => 
-      !data.data.some((model: any) => model.id === modelId)
+      !data.data.some((model: { id: string }) => model.id === modelId)
     );
 
     return Response.json({
       message: "Model availability check completed",
       totalModels: data.data.length,
-      availableModels: availableModels.map((model: any) => ({
+      availableModels: availableModels.map((model: { id: string; name: string; description: string }) => ({
         id: model.id,
         name: model.name,
         description: model.description

@@ -239,7 +239,7 @@ export default function PricingSectionINR() {
             <div className="space-y-4 pt-6 border-t border-gray-700">
               <h4 className="font-bold text-lg text-white mb-4 flex items-center">
                 <Check className="w-5 h-5 text-green-500 mr-2" />
-                What's included
+                What&#39;s included
               </h4>
               <ul className="space-y-3">
                 {plan.includes.map((feature, featureIndex) => (

@@ -1,4 +1,3 @@
-import { NextRequest } from "next/server";
 import { AVAILABLE_MODELS } from "@/lib/models";
 
 export async function GET() {

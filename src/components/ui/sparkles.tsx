@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useState } from "react"
 import Particles, { initParticlesEngine } from "@tsparticles/react"
+import type { Container, Engine } from "@tsparticles/engine"
 import { loadSlim } from "@tsparticles/slim"
 
 export function SparklesComp({
@@ -29,12 +30,12 @@ export function SparklesComp({
   minOpacity?: number | null
   color?: string
   background?: string
-  options?: any
+  options?: Record<string, unknown>
 }) {
   const [isReady, setIsReady] = useState(false)
 
   useEffect(() => {
-    initParticlesEngine(async (engine) => {
+    initParticlesEngine(async (engine: Engine) => {
       await loadSlim(engine)
     }).then(() => {
       setIsReady(true)
@@ -60,7 +61,7 @@ export function SparklesComp({
       },
       move: {
         enable: true,
-        direction: "none",
+        direction: "none" as const,
         speed: {
           min: minSpeed || speed / 10,
           max: speed,

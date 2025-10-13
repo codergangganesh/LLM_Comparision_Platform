@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, Variants } from "framer-motion";
+import { motion, Variants, Transition } from "framer-motion";
 import React, { ReactNode, useEffect, useState } from "react";
 
 interface VerticalCutRevealProps {
@@ -11,7 +11,7 @@ interface VerticalCutRevealProps {
   staggerDuration?: number;
   staggerFrom?: "first" | "last" | "center" | "random";
   reverse?: boolean;
-  transition?: any;
+  transition?: Transition;
 }
 
 export function VerticalCutReveal({

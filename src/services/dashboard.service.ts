@@ -1,168 +1,77 @@
-'use client'
+import { ChatSession } from '../types/chat'
+import { AiModel, AVAILABLE_MODELS } from '../lib/models'
+import { DashboardMetrics, UsageData, ModelUsageData, TimeSeriesData } from '../types/dashboard'
 
-import { ChatSession, ChatResponse } from '@/types/chat'
-import { createClient } from '@/utils/supabase/client'
-import { AI_MODELS } from '@/config/ai-models'
-
-export interface DashboardMetrics {
-  totalComparisons: number
-  modelsAnalyzed: number
-  accuracyScore: number
-  apiUsage: number
-}
-
-export interface ModelUsageData {
-  name: string
-  value: number
-  color: string
-}
-
-export interface UsageData {
-  apiCalls: number
-  comparisons: number
-  storage: number
-}
-
-export interface TimeSeriesData {
-  period: string
-  [key: string]: string | number
-}
-
-// Predefined distinct colors for models
+// Predefined distinct colors for consistent model coloring
 const DISTINCT_COLORS = [
-  '#3B82F6', // Blue
-  '#8B5CF6', // Purple
-  '#10B981', // Green
-  '#F59E0B', // Amber
-  '#EF4444', // Red
-  '#06B6D4', // Cyan
-  '#EC4899', // Pink
-  '#6366F1', // Indigo
-  '#14B8A6', // Teal
-  '#F97316', // Orange
-  '#A855F7', // Violet
-  '#0EA5E9', // Sky
-  '#8B5CF6', // Purple
-  '#22C55E', // Emerald
-  '#EAB308', // Yellow
-  '#F43F5E', // Rose
-  '#0D9488', // Emerald
-  '#C026D3', // Fuchsia
-  '#4F46E5', // Indigo
-  '#DC2626'  // Red
+  '#3B82F6', // blue-500
+  '#10B981', // emerald-500
+  '#8B5CF6', // violet-500
+  '#EC4899', // pink-500
+  '#F59E0B', // amber-500
+  '#EF4444', // red-500
+  '#06B6D4', // cyan-500
+  '#8B5CF6', // violet-500
+  '#F97316', // orange-500
+  '#6366F1', // indigo-500
 ]
 
 export class DashboardService {
-  private chatSessionsCache: ChatSession[] | null = null
-  private lastFetchTime: number | null = null
-  private readonly CACHE_DURATION = 5 * 60 * 1000 // 5 minutes cache
   private modelColorMap: Map<string, string> = new Map()
-  
-  // Cumulative metrics to preserve even when chat history is deleted
   private cumulativeMetrics: DashboardMetrics = {
     totalComparisons: 0,
     modelsAnalyzed: 0,
     accuracyScore: 0,
     apiUsage: 0
   }
-  
-  // Cumulative usage data
   private cumulativeUsageData: UsageData = {
     apiCalls: 0,
     comparisons: 0,
     storage: 0
   }
 
+  // Cache for computed data
+  private cache: Map<string, DashboardMetrics | UsageData | ModelUsageData[] | TimeSeriesData[] | string[]> = new Map()
+  private cacheTimeouts: Map<string, NodeJS.Timeout> = new Map()
+  private readonly CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
   constructor() {
-    // Load cumulative metrics from localStorage on initialization
     this.loadCumulativeMetricsFromStorage()
   }
 
   // Load cumulative metrics from localStorage
   private loadCumulativeMetricsFromStorage() {
-    try {
-      const savedCumulativeMetrics = localStorage.getItem('aiFiestaCumulativeMetrics')
-      const savedCumulativeUsageData = localStorage.getItem('aiFiestaCumulativeUsageData')
+    if (typeof window !== 'undefined') {
+      const savedMetrics = localStorage.getItem('aiFiestaDashboardMetrics')
+      const savedUsage = localStorage.getItem('aiFiestaUsageData')
       
-      if (savedCumulativeMetrics) {
-        this.cumulativeMetrics = JSON.parse(savedCumulativeMetrics)
+      if (savedMetrics) {
+        try {
+          this.cumulativeMetrics = JSON.parse(savedMetrics)
+        } catch (e) {
+          console.error('Failed to parse saved dashboard metrics:', e)
+        }
       }
       
-      if (savedCumulativeUsageData) {
-        this.cumulativeUsageData = JSON.parse(savedCumulativeUsageData)
+      if (savedUsage) {
+        try {
+          this.cumulativeUsageData = JSON.parse(savedUsage)
+        } catch (e) {
+          console.error('Failed to parse saved usage data:', e)
+        }
       }
-    } catch (error) {
-      console.error('Error loading cumulative metrics from localStorage:', error)
     }
   }
 
   // Save cumulative metrics to localStorage
   private saveCumulativeMetricsToStorage() {
-    try {
-      localStorage.setItem('aiFiestaCumulativeMetrics', JSON.stringify(this.cumulativeMetrics))
-      localStorage.setItem('aiFiestaCumulativeUsageData', JSON.stringify(this.cumulativeUsageData))
-    } catch (error) {
-      console.error('Error saving cumulative metrics to localStorage:', error)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('aiFiestaDashboardMetrics', JSON.stringify(this.cumulativeMetrics))
+      localStorage.setItem('aiFiestaUsageData', JSON.stringify(this.cumulativeUsageData))
     }
   }
 
-  async getChatSessions(useCache = true): Promise<ChatSession[] | null> {
-    try {
-      // Check if we have valid cached data
-      const now = Date.now()
-      if (useCache && this.chatSessionsCache && this.lastFetchTime && (now - this.lastFetchTime) < this.CACHE_DURATION) {
-        return this.chatSessionsCache
-      }
-
-      const supabase = createClient()
-      
-      // Check if user is authenticated
-      const { data: { session: userSession }, error: sessionError } = await supabase.auth.getSession()
-      
-      if (sessionError || !userSession) {
-        console.error('Error fetching chat sessions - No valid session:', sessionError?.message || 'No session found')
-        return null
-      }
-      
-      const { data, error } = await supabase
-        .from('chat_sessions')
-        .select('id, message, timestamp, selected_models, responses, best_response, response_time')
-        .eq('user_id', userSession.user.id)
-        .order('timestamp', { ascending: false })
-      
-      if (error) {
-        console.error('Error fetching chat sessions:', error)
-        return null
-      }
-      
-      const chatSessions: ChatSession[] = data.map((session: any) => ({
-        id: session.id,
-        message: session.message,
-        responses: session.responses,
-        timestamp: new Date(session.timestamp),
-        selectedModels: session.selected_models,
-        bestResponse: session.best_response,
-        responseTime: session.response_time
-      }))
-      
-      // Update cache
-      this.chatSessionsCache = chatSessions
-      this.lastFetchTime = now
-      
-      return chatSessions
-    } catch (error) {
-      console.error('Error fetching chat sessions:', error)
-      return null
-    }
-  }
-
-  // Method to clear cache
-  clearCache() {
-    this.chatSessionsCache = null
-    this.lastFetchTime = null
-  }
-
-  // Method to reset cumulative metrics (used when user wants to reset all data or deletes account)
+  // Reset cumulative metrics (used when account is deleted)
   resetCumulativeMetrics() {
     this.cumulativeMetrics = {
       totalComparisons: 0,
@@ -170,32 +79,17 @@ export class DashboardService {
       accuracyScore: 0,
       apiUsage: 0
     }
-    
     this.cumulativeUsageData = {
       apiCalls: 0,
       comparisons: 0,
       storage: 0
     }
-    
-    // Also clear localStorage
-    try {
-      localStorage.removeItem('aiFiestaCumulativeMetrics')
-      localStorage.removeItem('aiFiestaCumulativeUsageData')
-    } catch (error) {
-      console.error('Error clearing cumulative metrics from localStorage:', error)
-    }
+    this.saveCumulativeMetricsToStorage()
   }
 
-  // Method to preserve cumulative metrics when chat history is deleted
-  // This ensures that dashboard cards retain their values even when individual sessions are deleted
-  preserveCumulativeMetricsOnSessionDeletion() {
-    // Do nothing - cumulative metrics are already preserved
-    // This method exists to make the intent clear in the code
-  }
-
-  // Assign a distinct color to each model
-  assignModelColor(modelId: string): string {
-    // If we already have a color for this model, return it
+  // Assign a consistent color to each model
+  private assignModelColor(modelId: string): string {
+    // Check if we already have a color for this model
     if (this.modelColorMap.has(modelId)) {
       return this.modelColorMap.get(modelId)!
     }
@@ -209,6 +103,13 @@ export class DashboardService {
 
   // Calculate dashboard metrics based on chat sessions
   calculateDashboardMetrics(sessions: ChatSession[]): DashboardMetrics {
+    const cacheKey = `dashboardMetrics_${sessions.length}`
+    
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey) as DashboardMetrics
+    }
+    
     const totalComparisons = sessions.length
     const allSelectedModels = sessions.flatMap(session => session.selectedModels || [])
     const uniqueModels = Array.from(new Set(allSelectedModels)).length
@@ -227,11 +128,28 @@ export class DashboardService {
     // Save to localStorage
     this.saveCumulativeMetricsToStorage()
 
-    return { ...this.cumulativeMetrics }
+    const result = { ...this.cumulativeMetrics }
+    
+    // Cache the result
+    this.cache.set(cacheKey, result)
+    const timeout = setTimeout(() => {
+      this.cache.delete(cacheKey)
+      this.cacheTimeouts.delete(cacheKey)
+    }, this.CACHE_DURATION)
+    this.cacheTimeouts.set(cacheKey, timeout)
+    
+    return result
   }
 
   // Get usage data for the user
   getUsageData(sessions: ChatSession[]): UsageData {
+    const cacheKey = `usageData_${sessions.length}`
+    
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey) as UsageData
+    }
+    
     const apiCalls = sessions.length
     const comparisons = sessions.length
     
@@ -280,11 +198,28 @@ export class DashboardService {
     // Save to localStorage
     this.saveCumulativeMetricsToStorage()
 
-    return { ...this.cumulativeUsageData }
+    const result = { ...this.cumulativeUsageData }
+    
+    // Cache the result
+    this.cache.set(cacheKey, result)
+    const timeout = setTimeout(() => {
+      this.cache.delete(cacheKey)
+      this.cacheTimeouts.delete(cacheKey)
+    }, this.CACHE_DURATION)
+    this.cacheTimeouts.set(cacheKey, timeout)
+    
+    return result
   }
 
   // Get response time data by model
   getResponseTimeData(sessions: ChatSession[]): ModelUsageData[] {
+    const cacheKey = `responseTimeData_${sessions.length}`
+    
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey) as ModelUsageData[]
+    }
+    
     // Group response times by model
     const modelResponseTimes: Record<string, number[]> = {}
     
@@ -304,22 +239,39 @@ export class DashboardService {
     // Calculate average response time per model
     const modelData: ModelUsageData[] = []
     Object.entries(modelResponseTimes).forEach(([modelId, times]) => {
-      const model = AI_MODELS.find(m => m.id === modelId)
+      const model = AVAILABLE_MODELS.find((m: AiModel) => m.id === modelId)
       const avgTime = times.length > 0 ? times.reduce((sum, time) => sum + time, 0) / times.length : 0
       if (avgTime > 0) {
         modelData.push({
-          name: model?.displayName || modelId,
+          name: model?.label || modelId,
           value: parseFloat(avgTime.toFixed(2)),
           color: this.assignModelColor(modelId)
         })
       }
     })
     
-    return modelData.sort((a, b) => a.value - b.value)
+    const result = modelData.sort((a, b) => a.value - b.value)
+    
+    // Cache the result
+    this.cache.set(cacheKey, result)
+    const timeout = setTimeout(() => {
+      this.cache.delete(cacheKey)
+      this.cacheTimeouts.delete(cacheKey)
+    }, this.CACHE_DURATION)
+    this.cacheTimeouts.set(cacheKey, timeout)
+    
+    return result
   }
 
   // Get messages typed per model
   getMessagesTypedData(sessions: ChatSession[]): ModelUsageData[] {
+    const cacheKey = `messagesTypedData_${sessions.length}`
+    
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey) as ModelUsageData[]
+    }
+    
     const modelMessageCounts: Record<string, number> = {}
     
     sessions.forEach(session => {
@@ -332,20 +284,37 @@ export class DashboardService {
     
     const modelData: ModelUsageData[] = []
     Object.entries(modelMessageCounts).forEach(([modelId, count]) => {
-      const model = AI_MODELS.find(m => m.id === modelId)
+      const model = AVAILABLE_MODELS.find((m: AiModel) => m.id === modelId)
       modelData.push({
-        name: model?.displayName || modelId,
+        name: model?.label || modelId,
         value: count,
         color: this.assignModelColor(modelId)
       })
     })
     
     // Sort by count descending
-    return modelData.sort((a, b) => b.value - a.value)
+    const result = modelData.sort((a, b) => b.value - a.value)
+    
+    // Cache the result
+    this.cache.set(cacheKey, result)
+    const timeout = setTimeout(() => {
+      this.cache.delete(cacheKey)
+      this.cacheTimeouts.delete(cacheKey)
+    }, this.CACHE_DURATION)
+    this.cacheTimeouts.set(cacheKey, timeout)
+    
+    return result
   }
 
   // Get model data processing time
   getModelDataTimeData(sessions: ChatSession[]): ModelUsageData[] {
+    const cacheKey = `modelDataTimeData_${sessions.length}`
+    
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey) as ModelUsageData[]
+    }
+    
     // This is a simplified calculation - in a real app, this would be more complex
     const modelData: ModelUsageData[] = []
     const modelCounts: Record<string, number> = {}
@@ -359,17 +328,27 @@ export class DashboardService {
     })
     
     Object.entries(modelCounts).forEach(([modelId, count]) => {
-      const model = AI_MODELS.find(m => m.id === modelId)
+      const model = AVAILABLE_MODELS.find((m: AiModel) => m.id === modelId)
       // Simulate processing time based on usage (more usage = more efficient = less time)
       const processingTime = Math.max(0.1, 1.0 - (count * 0.05))
       modelData.push({
-        name: model?.displayName || modelId,
+        name: model?.label || modelId,
         value: parseFloat(processingTime.toFixed(2)),
         color: this.assignModelColor(modelId)
       })
     })
     
-    return modelData.sort((a, b) => a.value - b.value)
+    const result = modelData.sort((a, b) => a.value - b.value)
+    
+    // Cache the result
+    this.cache.set(cacheKey, result)
+    const timeout = setTimeout(() => {
+      this.cache.delete(cacheKey)
+      this.cacheTimeouts.delete(cacheKey)
+    }, this.CACHE_DURATION)
+    this.cacheTimeouts.set(cacheKey, timeout)
+    
+    return result
   }
 
   // Get response time distribution data
@@ -379,6 +358,13 @@ export class DashboardService {
 
   // Get line chart data for response time trends over time
   getLineChartData(sessions: ChatSession[]): TimeSeriesData[] {
+    const cacheKey = `lineChartData_${sessions.length}`
+    
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey) as TimeSeriesData[]
+    }
+    
     // Group sessions by date
     const sessionsByDate: Record<string, ChatSession[]> = {}
     
@@ -411,8 +397,8 @@ export class DashboardService {
       
       // Add average response time for each model
       Object.entries(modelResponseTimes).forEach(([modelId, times]) => {
-        const model = AI_MODELS.find(m => m.id === modelId)
-        const displayName = model?.displayName || modelId
+        const model = AVAILABLE_MODELS.find((m: AiModel) => m.id === modelId)
+        const displayName = model?.label || modelId
         const avgTime = times.length > 0 ? times.reduce((sum, time) => sum + time, 0) / times.length : 0
         if (avgTime > 0) {
           dataPoint[displayName] = parseFloat(avgTime.toFixed(2))
@@ -423,23 +409,50 @@ export class DashboardService {
     })
     
     // Sort by date
-    return lineData.sort((a, b) => a.period.localeCompare(b.period))
+    const result = lineData.sort((a, b) => a.period.localeCompare(b.period))
+    
+    // Cache the result
+    this.cache.set(cacheKey, result)
+    const timeout = setTimeout(() => {
+      this.cache.delete(cacheKey)
+      this.cacheTimeouts.delete(cacheKey)
+    }, this.CACHE_DURATION)
+    this.cacheTimeouts.set(cacheKey, timeout)
+    
+    return result
   }
 
   // Get metrics for line chart
   getLineChartMetrics(sessions: ChatSession[]): string[] {
+    const cacheKey = `lineChartMetrics_${sessions.length}`
+    
+    // Check cache first
+    if (this.cache.has(cacheKey)) {
+      return this.cache.get(cacheKey) as string[]
+    }
+    
     const allModels = new Set<string>()
     sessions.forEach(session => {
       if (session.selectedModels) {
         session.selectedModels.forEach(modelId => {
-          const model = AI_MODELS.find(m => m.id === modelId)
+          const model = AVAILABLE_MODELS.find((m: AiModel) => m.id === modelId)
           if (model) {
-            allModels.add(model.displayName)
+            allModels.add(model.label)
           }
         })
       }
     })
-    return Array.from(allModels)
+    const result = Array.from(allModels)
+    
+    // Cache the result
+    this.cache.set(cacheKey, result as string[])
+    const timeout = setTimeout(() => {
+      this.cache.delete(cacheKey)
+      this.cacheTimeouts.delete(cacheKey)
+    }, this.CACHE_DURATION)
+    this.cacheTimeouts.set(cacheKey, timeout)
+    
+    return result
   }
 
   // Get model color based on model ID for consistent coloring
@@ -457,14 +470,11 @@ export class DashboardService {
     return { ...this.cumulativeUsageData }
   }
   
-  // Filter sessions by date range
-  filterSessionsByDateRange(sessions: ChatSession[], days: number): ChatSession[] {
-    if (days <= 0) return sessions;
-    
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-    
-    return sessions.filter(session => new Date(session.timestamp) >= cutoffDate);
+  // Clear all cache
+  clearCache() {
+    this.cache.clear()
+    this.cacheTimeouts.forEach(timeout => clearTimeout(timeout))
+    this.cacheTimeouts.clear()
   }
 }
 

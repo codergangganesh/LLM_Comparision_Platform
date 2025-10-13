@@ -7,7 +7,7 @@ import { AIModel } from '@/types/app'
 
 export default function VerifyResponsePage() {
   const { darkMode } = useDarkMode()
-  const [responses, setResponses] = useState<any[]>([])
+  const [responses, setResponses] = useState<Array<{model: string, content: string, error?: string}>>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -103,7 +103,7 @@ export default function VerifyResponsePage() {
             <p className={`mb-6 transition-colors duration-200 ${
               darkMode ? 'text-gray-300' : 'text-slate-700'
             }`}>
-              "{testMessage}"
+              &quot;{testMessage}&quot;
             </p>
             
             <button

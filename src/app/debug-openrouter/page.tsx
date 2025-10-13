@@ -3,10 +3,17 @@
 import { useState } from 'react'
 import { useDarkMode } from '@/contexts/DarkModeContext'
 
+interface TestResult {
+  success?: boolean
+  message?: string
+  error?: string
+  [key: string]: unknown
+}
+
 export default function DebugOpenRouterPage() {
   const { darkMode } = useDarkMode()
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<TestResult | null>(null)
   const [error, setError] = useState('')
 
   const handleTest = async () => {
@@ -26,7 +33,7 @@ export default function DebugOpenRouterPage() {
       const data = await res.json()
       
       if (!res.ok) {
-        setError(data)
+        setError(JSON.stringify(data))
         console.error('Test error:', data)
       } else {
         setResult(data)
@@ -90,7 +97,7 @@ export default function DebugOpenRouterPage() {
             }`}>
               <h2 className="text-xl font-bold mb-3">Error</h2>
               <pre className="whitespace-pre-wrap text-sm">
-                {JSON.stringify(error, null, 2)}
+                {error}
               </pre>
             </div>
           )}

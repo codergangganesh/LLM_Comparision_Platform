@@ -1,6 +1,7 @@
 'use client'
 
 import { usePopup } from '@/contexts/PopupContext'
+import Link from 'next/link'
 
 export default function TestPricingPage() {
   const { openPaymentPopup } = usePopup()
@@ -20,9 +21,9 @@ export default function TestPricingPage() {
       </div>
       
       <div className="text-center">
-        <a href="/" className="text-blue-400 hover:underline">
+        <Link href="/" className="text-blue-400 hover:underline">
           Go to Home
-        </a>
+        </Link>
       </div>
     </div>
   )

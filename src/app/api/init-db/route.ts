@@ -1,8 +1,8 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function POST(req: NextRequest) {
-  const supabase = createClient();
+export async function POST(_req: NextRequest) {
+  const supabase = await createClient();
   
   // Get user
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -63,11 +63,12 @@ USING (auth.uid() = user_id);
       message: "Please run the following SQL in your Supabase SQL Editor",
       sql: sqlScript
     }), { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Initialization error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ 
       error: "Initialization failed",
-      message: error.message 
+      message: errorMessage 
     }), { status: 500 });
   }
 }

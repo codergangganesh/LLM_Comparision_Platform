@@ -29,7 +29,13 @@ export const databaseClientService = {
     return 45
   },
 
-  getModelComparisonData: async (): Promise<any[]> => {
+  getModelComparisonData: async (): Promise<Array<{
+    modelName: string
+    responseTime: number
+    messagesTyped: number
+    modelDataTime: number
+    responseTimeDistribution: number[]
+  }>> => {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 500))
     // Return mock data
@@ -72,7 +78,13 @@ export const databaseClientService = {
     ]
   },
 
-  getResponseTimeTrends: async (): Promise<any[]> => {
+  getResponseTimeTrends: async (): Promise<Array<{
+    period: string
+    modelName: string
+    responseTime: number
+    messagesTyped: number
+    modelDataTime: number
+  }>> => {
     // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 500))
     // Return mock data

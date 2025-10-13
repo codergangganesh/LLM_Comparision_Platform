@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   console.log('POST /api/debug-save called');
   
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Get user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -18,9 +18,9 @@ export async function POST(req: NextRequest) {
     console.log('User authenticated:', user.id);
     
     // Get the session data from the request
-    let sessionData: any;
+    let sessionData: Record<string, unknown>;
     try {
-      sessionData = await req.json();
+      sessionData = await _req.json();
       console.log('Received session data:', JSON.stringify(sessionData, null, 2));
     } catch (parseError) {
       console.error('Invalid JSON in request body:', parseError);
@@ -28,13 +28,13 @@ export async function POST(req: NextRequest) {
     }
     
     // Validate and prepare the data
-    const id = sessionData.id || `debug_${Date.now()}`;
-    const message = sessionData.message || "Debug message";
+    const id = (sessionData.id as string) || `debug_${Date.now()}`;
+    const message = (sessionData.message as string) || "Debug message";
     const responses = Array.isArray(sessionData.responses) ? sessionData.responses : [];
-    const timestamp = sessionData.timestamp ? new Date(sessionData.timestamp).toISOString() : new Date().toISOString();
+    const timestamp = sessionData.timestamp ? new Date(sessionData.timestamp as string).toISOString() : new Date().toISOString();
     const selected_models = Array.isArray(sessionData.selectedModels) ? sessionData.selectedModels : ["debug-model"];
-    const best_response = sessionData.bestResponse || null;
-    const response_time = sessionData.responseTime || null;
+    const best_response = (sessionData.bestResponse as string) || null;
+    const response_time = (sessionData.responseTime as number) || null;
     
     const preparedData = {
       id,
@@ -90,12 +90,14 @@ export async function POST(req: NextRequest) {
       insertedData: data,
       preparedData: preparedData
     }), { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
     console.error('Unexpected error:', error);
     return new Response(JSON.stringify({ 
       error: "Unexpected error",
-      message: error.message,
-      stack: error.stack
+      message: errorMessage,
+      stack: errorStack
     }), { status: 500 });
   }
 }

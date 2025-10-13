@@ -3,9 +3,14 @@
 import { useState, useEffect } from 'react'
 import { useDarkMode } from '@/contexts/DarkModeContext'
 
+interface EnvData {
+  environment: Record<string, string>
+  allRequiredSet: boolean
+}
+
 export default function TestEnvPage() {
   const { darkMode } = useDarkMode()
-  const [envData, setEnvData] = useState<any>(null)
+  const [envData, setEnvData] = useState<EnvData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -80,7 +85,7 @@ export default function TestEnvPage() {
                     }`}>
                       {typeof value === "string" && value !== "MISSING" && value !== "SET" 
                         ? "SET (hidden for security)" 
-                        : value as string}
+                        : value}
                     </span>
                   </div>
                 ))}

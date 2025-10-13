@@ -1,19 +1,23 @@
 import { NextRequest } from "next/server";
 
-type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
-type MultiChatBody = { 
+interface ChatMessage { 
+  role: "system" | "user" | "assistant"; 
+  content: string; 
+}
+
+interface MultiChatBody { 
   models: string[]; 
   messages: ChatMessage[]; 
   maxTokens?: number; 
   temperature?: number;
   message?: string; // For single message comparisons
-};
+}
 
 // Define a proper error type
-type ApiError = {
+interface ApiError {
   message: string;
-  details?: any;
-};
+  details?: string;
+}
 
 // Function to delay execution
 function delay(ms: number) {
@@ -31,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   let body: MultiChatBody;
   try {
-    body = (await req.json()) as MultiChatBody;
+    body = await req.json() as MultiChatBody;
   } catch (parseError) {
     return new Response(JSON.stringify({ 
       error: "Invalid JSON in request body",
@@ -63,7 +67,7 @@ export async function POST(req: NextRequest) {
     const startTime = Date.now(); // Track start time for response time calculation
     
     // Process requests sequentially with rate limiting to avoid 429 errors
-    const results = [];
+    const results: Array<{model: string; content?: string; error?: string; details?: string}> = [];
     for (let i = 0; i < body.models.length; i++) {
       const modelId = body.models[i];
       
@@ -160,29 +164,32 @@ export async function POST(req: NextRequest) {
         const decoder = new TextDecoder();
         
         if (reader) {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n').filter(line => line.trim() !== '');
-            
-            for (const line of lines) {
-              if (line.startsWith('data:')) {
-                const data = line.slice(5).trim();
-                if (data === '[DONE]') continue;
-                
-                try {
-                  const json = JSON.parse(data);
-                  const token = json.choices[0]?.delta?.content;
-                  if (token) content += token;
-                } catch (e) {
-                  console.error('Error parsing SSE:', e);
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              const chunk = decoder.decode(value);
+              const lines = chunk.split('\n').filter(line => line.trim() !== '');
+              
+              for (const line of lines) {
+                if (line.startsWith('data:')) {
+                  const data = line.slice(5).trim();
+                  if (data === '[DONE]') continue;
+                  
+                  try {
+                    const json = JSON.parse(data);
+                    const token = json.choices[0]?.delta?.content;
+                    if (token) content += token;
+                  } catch (e) {
+                    console.error('Error parsing SSE:', e);
+                  }
                 }
               }
             }
+          } finally {
+            reader.releaseLock();
           }
-          reader.releaseLock();
         }
 
         results.push({ model: modelId, content });

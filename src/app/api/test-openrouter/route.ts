@@ -1,4 +1,14 @@
-import { NextRequest } from "next/server";
+interface OpenRouterModel {
+  id: string;
+  name: string;
+  description: string;
+  [key: string]: unknown;
+}
+
+interface OpenRouterResponse {
+  data: OpenRouterModel[];
+  [key: string]: unknown;
+}
 
 export async function GET() {
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -28,10 +38,10 @@ export async function GET() {
       }), { status: response.status });
     }
 
-    const data = await response.json();
+    const data: OpenRouterResponse = await response.json();
     
     // Filter for free models
-    const freeModels = data.data.filter((model: any) => 
+    const freeModels = data.data.filter((model: OpenRouterModel) => 
       model.id.includes(':free') || 
       model.id.includes('openrouter/auto') ||
       model.id === 'openai/gpt-3.5-turbo' ||
@@ -42,7 +52,7 @@ export async function GET() {
       message: "OpenRouter API key is valid",
       totalModels: data.data.length,
       freeModels: freeModels.length,
-      sampleFreeModels: freeModels.slice(0, 5).map((model: any) => ({
+      sampleFreeModels: freeModels.slice(0, 5).map((model: OpenRouterModel) => ({
         id: model.id,
         name: model.name,
         description: model.description

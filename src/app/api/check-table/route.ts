@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   console.log('GET /api/check-table called');
-  const supabase = createClient();
+  const supabase = await createClient();
   
   // Get user
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -42,7 +42,7 @@ export async function GET(req: NextRequest) {
     console.log('chat_sessions table exists, checking permissions...');
     
     // Try a simple select to check permissions
-    const { data: selectData, error: selectError } = await supabase
+    const { error: selectError } = await supabase
       .from('chat_sessions')
       .select('id')
       .limit(1);
@@ -102,11 +102,12 @@ export async function GET(req: NextRequest) {
         delete: true
       }
     }), { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Unexpected error:', error);
     return new Response(JSON.stringify({ 
       error: "Unexpected error",
-      message: error.message 
+      message: errorMessage 
     }), { status: 500 });
   }
 }

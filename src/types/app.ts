@@ -9,6 +9,7 @@ export interface AIModel {
 export interface Conversation {
   id: string;
   title: string;
+  description?: string;
   message: string;
   responses: ConversationResponse[];
   createdAt: string;

@@ -11,7 +11,7 @@ interface TimelineContentProps {
   customVariants?: Variants
   className?: string
   as?: keyof JSX.IntrinsicElements
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export function TimelineContent({

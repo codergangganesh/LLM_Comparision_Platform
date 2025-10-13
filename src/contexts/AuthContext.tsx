@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [])
+  }, [supabase])
 
   const signIn = async (email: string, password: string, showLoadingFn?: (message?: string) => void, hideLoadingFn?: () => void) => {
     try {

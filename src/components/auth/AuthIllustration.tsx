@@ -11,7 +11,7 @@ const AuthIllustration = () => {
           AI Fiesta
         </h1>
         <blockquote className="text-lg italic text-violet-200/90 max-w-md mx-auto mb-6 border-l-2 border-violet-500/50 pl-6">
-          "Where AI Models Compete, Innovation Ignites"
+          &quot;Where AI Models Compete, Innovation Ignites&quot;
         </blockquote>
         <div className="text-violet-300/80 max-w-lg mx-auto space-y-4">
           <p>
