@@ -2,6 +2,7 @@
 
 import { useLoading } from '@/contexts/LoadingContext'
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 
 export default function TestLoadingPage() {
   const { isLoading, loadingMessage, showLoading, hideLoading } = useLoading()
@@ -51,9 +52,9 @@ export default function TestLoadingPage() {
       </div>
       
       <div className="text-center">
-        <a href="/" className="text-blue-400 hover:underline">
+        <Link href="/" className="text-blue-400 hover:underline">
           Go to Home
-        </a>
+        </Link>
       </div>
     </div>
   )

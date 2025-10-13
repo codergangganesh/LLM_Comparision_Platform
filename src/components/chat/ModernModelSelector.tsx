@@ -28,7 +28,7 @@ export default function ModernModelSelector({ selectedModels, onModelToggle }: M
   const { darkMode } = useDarkMode()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProvider, setSelectedProvider] = useState<string>('all')
-  const [sortBy, setSortBy] = useState<'name' | 'provider' | 'speed' | 'cost'>('name')
+  const [sortBy, setSortBy] = useState<'name' | 'provider'>('name')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
 
   const providers = ['all', ...Array.from(new Set(AI_MODELS.map(m => m.provider)))]
@@ -44,12 +44,6 @@ export default function ModernModelSelector({ selectedModels, onModelToggle }: M
         return a.displayName.localeCompare(b.displayName)
       case 'provider':
         return a.provider.localeCompare(b.provider)
-      case 'speed':
-        const speedOrder = { 'very-fast': 0, 'fast': 1, 'medium': 2, 'slow': 3 }
-        return speedOrder[a.speed || 'medium'] - speedOrder[b.speed || 'medium']
-      case 'cost':
-        const costOrder = { 'very-low': 0, 'low': 1, 'medium': 2, 'high': 3 }
-        return costOrder[a.cost || 'medium'] - costOrder[b.cost || 'medium']
       default:
         return 0
     }
@@ -83,25 +77,7 @@ export default function ModernModelSelector({ selectedModels, onModelToggle }: M
     }
   }
 
-  const getSpeedColor = (speed: string) => {
-    switch (speed) {
-      case 'very-fast': return 'text-green-500'
-      case 'fast': return 'text-green-400'
-      case 'medium': return 'text-yellow-500'
-      case 'slow': return 'text-red-500'
-      default: return 'text-gray-500'
-    }
-  }
-
-  const getCostColor = (cost: string) => {
-    switch (cost) {
-      case 'very-low': return 'text-green-500'
-      case 'low': return 'text-green-400'
-      case 'medium': return 'text-yellow-500'
-      case 'high': return 'text-red-500'
-      default: return 'text-gray-500'
-    }
-  }
+  // Speed and cost functions removed as not used in current model data
 
   return (
     <div className="space-y-6">
@@ -210,7 +186,7 @@ export default function ModernModelSelector({ selectedModels, onModelToggle }: M
             <div className="relative">
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as 'name' | 'provider')}
                 className={`appearance-none pl-4 pr-10 py-3 rounded-xl focus:outline-none focus:ring-2 transition-colors duration-200 ${
                   darkMode
                     ? 'bg-gray-800 border border-gray-700 text-white focus:ring-violet-500 focus:border-transparent'
@@ -228,18 +204,6 @@ export default function ModernModelSelector({ selectedModels, onModelToggle }: M
                   className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-slate-900'}
                 >
                   Sort by Provider
-                </option>
-                <option 
-                  value="speed"
-                  className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-slate-900'}
-                >
-                  Sort by Speed
-                </option>
-                <option 
-                  value="cost"
-                  className={darkMode ? 'bg-gray-800 text-white' : 'bg-white text-slate-900'}
-                >
-                  Sort by Cost
                 </option>
               </select>
               <ChevronDown className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none transition-colors duration-200 ${
@@ -327,59 +291,33 @@ export default function ModernModelSelector({ selectedModels, onModelToggle }: M
               {/* Model Details */}
               <div className="px-5 pb-5">
                 <div className="grid grid-cols-2 gap-3 mt-4">
+                  {/* Speed, cost, and context information removed as not available in current model data */}
                   <div className={`rounded-xl p-3 transition-colors duration-200 ${
                     darkMode ? 'bg-gray-800' : 'bg-slate-50'
                   }`}>
                     <div className="flex items-center space-x-2">
-                      <Clock className={`w-4 h-4 transition-colors duration-200 ${
+                      <Star className={`w-4 h-4 transition-colors duration-200 ${
                         darkMode ? 'text-gray-500' : 'text-slate-500'
                       }`} />
                       <span className={`text-xs font-medium transition-colors duration-200 ${
                         darkMode ? 'text-gray-400' : 'text-slate-500'
                       }`}>
-                        Speed
+                        Capabilities
                       </span>
                     </div>
-                    <div className={`text-sm font-bold mt-1 ${getSpeedColor(model.speed || 'medium')}`}>
-                      {model.speed || 'Medium'}
-                    </div>
-                  </div>
-                  
-                  <div className={`rounded-xl p-3 transition-colors duration-200 ${
-                    darkMode ? 'bg-gray-800' : 'bg-slate-50'
-                  }`}>
-                    <div className="flex items-center space-x-2">
-                      <DollarSign className={`w-4 h-4 transition-colors duration-200 ${
-                        darkMode ? 'text-gray-500' : 'text-slate-500'
-                      }`} />
-                      <span className={`text-xs font-medium transition-colors duration-200 ${
-                        darkMode ? 'text-gray-400' : 'text-slate-500'
-                      }`}>
-                        Cost
-                      </span>
-                    </div>
-                    <div className={`text-sm font-bold mt-1 ${getCostColor(model.cost || 'medium')}`}>
-                      {model.cost || 'Medium'}
-                    </div>
-                  </div>
-                  
-                  <div className={`rounded-xl p-3 transition-colors duration-200 ${
-                    darkMode ? 'bg-gray-800' : 'bg-slate-50'
-                  }`}>
-                    <div className="flex items-center space-x-2">
-                      <Brain className={`w-4 h-4 transition-colors duration-200 ${
-                        darkMode ? 'text-gray-500' : 'text-slate-500'
-                      }`} />
-                      <span className={`text-xs font-medium transition-colors duration-200 ${
-                        darkMode ? 'text-gray-400' : 'text-slate-500'
-                      }`}>
-                        Context
-                      </span>
-                    </div>
-                    <div className={`text-sm font-bold mt-1 transition-colors duration-200 ${
-                      darkMode ? 'text-gray-300' : 'text-slate-900'
-                    }`}>
-                      {model.contextWindow || '32K tokens'}
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {model.capabilities?.slice(0, 2).map((cap, idx) => (
+                        <div key={idx} className={darkMode ? 'text-gray-400' : 'text-slate-700'} title={cap}>
+                          {getCapabilityIcon(cap)}
+                        </div>
+                      ))}
+                      {model.capabilities && model.capabilities.length > 2 && (
+                        <div className={`text-xs transition-colors duration-200 ${
+                          darkMode ? 'text-gray-500' : 'text-slate-500'
+                        }`}>
+                          +{model.capabilities.length - 2}
+                        </div>
+                      )}
                     </div>
                   </div>
                   

@@ -2,9 +2,19 @@ import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { ChatSession } from "@/types/chat";
 
+interface DatabaseChatSession {
+  id: string;
+  message: string;
+  timestamp: string;
+  selected_models: string[];
+  responses: unknown[];
+  best_response?: string;
+  response_time?: number;
+}
+
 export async function GET(req: NextRequest) {
   console.log('GET /api/chat-sessions called');
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     // Get user with better error handling
@@ -56,10 +66,10 @@ export async function GET(req: NextRequest) {
     console.log('GET - Successfully fetched sessions:', data?.length || 0);
     
     // Convert database format to ChatSession format
-    const chatSessions: ChatSession[] = data.map((session: any) => ({
+    const chatSessions: ChatSession[] = (data as DatabaseChatSession[]).map(session => ({
       id: session.id,
       message: session.message,
-      responses: session.responses,
+      responses: session.responses as ChatSession['responses'],
       timestamp: new Date(session.timestamp),
       selectedModels: session.selected_models,
       bestResponse: session.best_response,
@@ -75,15 +85,16 @@ export async function GET(req: NextRequest) {
         hasMore: offset + clampedLimit < (count || 0)
       }
     }), { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('GET - Unexpected error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return new Response(JSON.stringify({ error: errorMessage }), { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   console.log('POST /api/chat-sessions called');
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     // Get user with better error handling
@@ -101,11 +112,12 @@ export async function POST(req: NextRequest) {
     
     let session: ChatSession;
     try {
-      session = await req.json();
+      session = await req.json() as ChatSession;
       console.log('POST - Received session data:', JSON.stringify(session, null, 2));
     } catch (parseError) {
       console.error('POST - Invalid JSON in request body:', parseError);
-      return new Response(JSON.stringify({ error: "Invalid JSON in request body" }), { status: 400 });
+      const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+      return new Response(JSON.stringify({ error: "Invalid JSON in request body", details: errorMessage }), { status: 400 });
     }
     
     // Validate required fields
@@ -209,15 +221,16 @@ export async function POST(req: NextRequest) {
     
     console.log('POST - Successfully saved session:', session.id);
     return new Response(JSON.stringify({ success: true }), { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('POST - Unexpected error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return new Response(JSON.stringify({ error: errorMessage }), { status: 500 });
   }
 }
 
 export async function DELETE(req: NextRequest) {
   console.log('DELETE /api/chat-sessions called');
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     // Get user with better error handling
@@ -236,11 +249,12 @@ export async function DELETE(req: NextRequest) {
     try {
       let sessionId: string;
       try {
-        const body = await req.json();
+        const body = await req.json() as { sessionId: string };
         sessionId = body.sessionId;
       } catch (parseError) {
         console.error('DELETE - Invalid JSON in request body:', parseError);
-        return new Response(JSON.stringify({ error: "Invalid JSON in request body" }), { status: 400 });
+        const errorMessage = parseError instanceof Error ? parseError.message : String(parseError);
+        return new Response(JSON.stringify({ error: "Invalid JSON in request body", details: errorMessage }), { status: 400 });
       }
       
       if (!sessionId) {
@@ -263,12 +277,14 @@ export async function DELETE(req: NextRequest) {
       
       console.log('DELETE - Successfully deleted session:', sessionId);
       return new Response(JSON.stringify({ success: true }), { status: 200 });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('DELETE - Unexpected error:', error);
-      return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      return new Response(JSON.stringify({ error: errorMessage }), { status: 500 });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('DELETE - Authentication error:', error);
-    return new Response(JSON.stringify({ error: "Authentication failed", details: error.message }), { status: 401 });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return new Response(JSON.stringify({ error: "Authentication failed", details: errorMessage }), { status: 401 });
   }
 }

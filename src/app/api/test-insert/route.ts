@@ -1,11 +1,11 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   console.log('POST /api/test-insert called');
   
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Get user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -42,8 +42,7 @@ export async function POST(req: NextRequest) {
       return new Response(JSON.stringify({ 
         error: "Insert failed",
         details: error.message,
-        code: error.code,
-        fullError: error
+        code: error.code
       }), { status: 500 });
     }
     
@@ -63,11 +62,12 @@ export async function POST(req: NextRequest) {
       message: "Test insert successful",
       insertedData: data
     }), { status: 200 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Unexpected error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(JSON.stringify({ 
       error: "Unexpected error",
-      message: error.message
+      message: errorMessage
     }), { status: 500 });
   }
 }

@@ -3,40 +3,56 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
+import SharedSidebar from '@/components/layout/SharedSidebar'
 import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
 import OptimizedPageTransitionLoader from '@/components/ui/OptimizedPageTransitionLoader'
 import { useOptimizedLoading } from '@/contexts/OptimizedLoadingContext'
-import { Camera, User, Mail, Calendar, Shield, Bell, Palette, Globe, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react'
-import SharedSidebar from '@/components/layout/SharedSidebar'
+
+import {
+  User,
+  Bell,
+  Shield,
+  Palette,
+  Camera,
+  Save,
+  CheckCircle,
+  XCircle
+} from 'lucide-react'
 
 export default function ProfilePage() {
   const { user, loading } = useAuth()
   const router = useOptimizedRouter()
   const { darkMode, toggleDarkMode } = useDarkMode()
   const { setPageLoading } = useOptimizedLoading()
-  const [activeTab, setActiveTab] = useState('profile')
-  const [showPassword, setShowPassword] = useState(false)
   
   // Redirect unauthenticated users to the auth page
   useEffect(() => {
     if (!loading && !user) {
-      setPageLoading(true, "Redirecting to authentication...");
+      setPageLoading(true, "Redirecting to authentication...")
       router.push('/auth')
     } else if (user && !loading) {
-      setPageLoading(false);
+      setPageLoading(false)
     }
   }, [user, loading, router, setPageLoading])
 
   // Show loading while checking auth status
   if (loading) {
-    return <OptimizedPageTransitionLoader message="Loading profile..." />;
+    return <OptimizedPageTransitionLoader message="Loading profile..." />
   }
 
   // Show nothing while redirecting
   if (!user) {
-    return null;
+    return null
   }
 
+  return <ProfileContent user={user} darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
+}
+
+function ProfileContent({ user, darkMode, toggleDarkMode }: { 
+  user: { email?: string; user_metadata?: { full_name?: string; avatar_url?: string } } | null, 
+  darkMode: boolean, 
+  toggleDarkMode: () => void 
+}) {
   // Form data state
   const [formData, setFormData] = useState({
     name: user?.user_metadata?.full_name || '',
@@ -238,21 +254,20 @@ export default function ProfilePage() {
                   <p className={`text-sm transition-colors duration-200 ${
                     darkMode ? 'text-gray-300' : 'text-slate-600'
                   }`}>
-                    {user?.email || 'user@example.com'}
+                    Member since {formData.joinDate}
                   </p>
                 </div>
-
-                <div className="space-y-1">
+                
+                <div className="space-y-2">
                   {tabs.map((tab) => {
                     const Icon = tab.icon
                     return (
                       <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all ${
-                          activeTab === tab.id
-                            ? 'bg-indigo-500 text-white shadow-md'
-                            : `${darkMode ? 'text-gray-300 hover:bg-gray-700/50' : 'text-slate-700 hover:bg-slate-100'}`
+                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                          darkMode 
+                            ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
+                            : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
                         }`}
                       >
                         <Icon className="w-5 h-5" />
@@ -273,471 +288,355 @@ export default function ProfilePage() {
               }`}>
                 {/* Save Status Notification */}
                 {saveStatus.type && (
-                  <div className={`mb-6 p-4 rounded-xl flex items-center ${
+                  <div className={`mb-6 p-4 rounded-xl flex items-center space-x-3 ${
                     saveStatus.type === 'success' 
-                      ? 'bg-green-500/20 text-green-700 dark:text-green-300 border border-green-500/30' 
-                      : 'bg-red-500/20 text-red-700 dark:text-red-300 border border-red-500/30'
+                      ? darkMode 
+                        ? 'bg-green-900/30 border border-green-700/50 text-green-300' 
+                        : 'bg-green-50 border border-green-200 text-green-700'
+                      : darkMode 
+                        ? 'bg-red-900/30 border border-red-700/50 text-red-300' 
+                        : 'bg-red-50 border border-red-200 text-red-700'
                   }`}>
-                    {saveStatus.type === 'success' ? 
-                      <CheckCircle className="w-5 h-5 mr-2" /> : 
-                      <AlertCircle className="w-5 h-5 mr-2" />
-                    }
-                    <span>{saveStatus.message}</span>
+                    {saveStatus.type === 'success' ? (
+                      <CheckCircle className="w-5 h-5" />
+                    ) : (
+                      <XCircle className="w-5 h-5" />
+                    )}
+                    <span className="font-medium">{saveStatus.message}</span>
                   </div>
                 )}
-                
-                {activeTab === 'profile' && (
-                  <div>
-                    <h2 className={`text-2xl font-bold mb-6 transition-colors duration-200 ${
-                      darkMode ? 'text-white' : 'text-slate-900'
-                    }`}>
-                      Profile Information
-                    </h2>
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label className={`block text-sm font-medium mb-2 ${
-                            darkMode ? 'text-gray-300' : 'text-slate-700'
-                          }`}>
-                            Full Name
-                          </label>
-                          <input
-                            type="text"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            className={`w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                              darkMode 
-                                ? 'bg-gray-700/50 border-gray-600 text-white' 
-                                : 'bg-slate-50 border-slate-200 text-slate-900'
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <label className={`block text-sm font-medium mb-2 ${
-                            darkMode ? 'text-gray-300' : 'text-slate-700'
-                          }`}>
-                            Email Address
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="email"
-                              name="email"
-                              value={formData.email}
-                              onChange={handleInputChange}
-                              disabled
-                              className={`w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                                darkMode 
-                                  ? 'bg-gray-700/50 border-gray-600 text-gray-400' 
-                                  : 'bg-slate-50 border-slate-200 text-slate-500'
-                              }`}
-                            />
-                            <Mail className={`absolute right-3 top-3.5 w-5 h-5 ${
-                              darkMode ? 'text-gray-500' : 'text-slate-400'
-                            }`} />
-                          </div>
-                        </div>
-                      </div>
 
+                {/* Profile Section */}
+                <div className="mb-8">
+                  <h2 className={`text-2xl font-bold mb-6 transition-colors duration-200 ${
+                    darkMode ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    Profile Information
+                  </h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 transition-colors duration-200 ${
+                        darkMode ? 'text-gray-300' : 'text-slate-700'
+                      }`}>
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-xl border transition-colors duration-200 ${
+                          darkMode 
+                            ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400' 
+                            : 'bg-white border-slate-200/50 text-slate-900 placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400'
+                        }`}
+                        placeholder="Enter your full name"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 transition-colors duration-200 ${
+                        darkMode ? 'text-gray-300' : 'text-slate-700'
+                      }`}>
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-xl border transition-colors duration-200 ${
+                          darkMode 
+                            ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400' 
+                            : 'bg-white border-slate-200/50 text-slate-900 placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400'
+                        }`}
+                        placeholder="Enter your email"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <button
+                      onClick={handleSaveProfile}
+                      className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>Save Profile</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className={`my-8 h-px ${
+                  darkMode ? 'bg-gray-700/50' : 'bg-slate-200/50'
+                }`}></div>
+
+                {/* Notifications Section */}
+                <div className="mb-8">
+                  <h2 className={`text-2xl font-bold mb-6 transition-colors duration-200 ${
+                    darkMode ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    Notifications
+                  </h2>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <label className={`block text-sm font-medium mb-2 ${
-                          darkMode ? 'text-gray-300' : 'text-slate-700'
+                        <h3 className={`font-medium transition-colors duration-200 ${
+                          darkMode ? 'text-gray-200' : 'text-slate-800'
                         }`}>
-                          Member Since
-                        </label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            value={formData.joinDate}
-                            disabled
-                            className={`w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                              darkMode 
-                                ? 'bg-gray-700/50 border-gray-600 text-gray-400' 
-                                : 'bg-slate-50 border-slate-200 text-slate-500'
-                            }`}
-                          />
-                          <Calendar className={`absolute right-3 top-3.5 w-5 h-5 ${
-                            darkMode ? 'text-gray-500' : 'text-slate-400'
-                          }`} />
-                        </div>
-                      </div>
-
-                      <div className="flex justify-end">
-                        <button 
-                          onClick={handleSaveProfile}
-                          className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-md hover:shadow-lg"
-                        >
-                          Save Changes
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'notifications' && (
-                  <div>
-                    <h2 className={`text-2xl font-bold mb-6 transition-colors duration-200 ${
-                      darkMode ? 'text-white' : 'text-slate-900'
-                    }`}>
-                      Notification Preferences
-                    </h2>
-                    <div className="space-y-4">
-                      <div className={`p-4 rounded-xl ${
-                        darkMode ? 'bg-gray-700/30' : 'bg-slate-100'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className={`font-medium ${
-                              darkMode ? 'text-white' : 'text-slate-900'
-                            }`}>
-                              Email Notifications
-                            </h3>
-                            <p className={`text-sm ${
-                              darkMode ? 'text-gray-400' : 'text-slate-600'
-                            }`}>
-                              Receive email updates about your account
-                            </p>
-                          </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              name="notifications.email"
-                              checked={formData.notifications.email}
-                              onChange={handleInputChange}
-                              className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className={`p-4 rounded-xl ${
-                        darkMode ? 'bg-gray-700/30' : 'bg-slate-100'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className={`font-medium ${
-                              darkMode ? 'text-white' : 'text-slate-900'
-                            }`}>
-                              Product Updates
-                            </h3>
-                            <p className={`text-sm ${
-                              darkMode ? 'text-gray-400' : 'text-slate-600'
-                            }`}>
-                              Receive updates about new features
-                            </p>
-                          </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              name="notifications.product"
-                              checked={formData.notifications.product}
-                              onChange={handleInputChange}
-                              className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                          </label>
-                        </div>
-                      </div>
-
-                      <div className={`p-4 rounded-xl ${
-                        darkMode ? 'bg-gray-700/30' : 'bg-slate-100'
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <h3 className={`font-medium ${
-                              darkMode ? 'text-white' : 'text-slate-900'
-                            }`}>
-                              Security Alerts
-                            </h3>
-                            <p className={`text-sm ${
-                              darkMode ? 'text-gray-400' : 'text-slate-600'
-                            }`}>
-                              Get notified about security events
-                            </p>
-                          </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              name="notifications.security"
-                              checked={formData.notifications.security}
-                              onChange={handleInputChange}
-                              className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                          </label>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-end">
-                        <button 
-                          onClick={handleSaveNotifications}
-                          className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-md hover:shadow-lg"
-                        >
-                          Save Preferences
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'security' && (
-                  <div>
-                    <h2 className={`text-2xl font-bold mb-6 transition-colors duration-200 ${
-                      darkMode ? 'text-white' : 'text-slate-900'
-                    }`}>
-                      Security Settings
-                    </h2>
-                    <div className="space-y-6">
-                      <div className={`p-6 rounded-xl ${
-                        darkMode ? 'bg-gray-700/30' : 'bg-slate-100'
-                      }`}>
-                        <h3 className={`font-bold mb-4 flex items-center ${
-                          darkMode ? 'text-white' : 'text-slate-900'
-                        }`}>
-                          <Shield className="w-5 h-5 mr-2" />
-                          Change Password
+                          Email Notifications
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${
-                              darkMode ? 'text-gray-300' : 'text-slate-700'
-                            }`}>
-                              Current Password
-                            </label>
-                            <div className="relative">
-                              <input
-                                type={showPassword ? "text" : "password"}
-                                name="currentPassword"
-                                value={formData.currentPassword}
-                                onChange={handleInputChange}
-                                className={`w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                                  darkMode 
-                                    ? 'bg-gray-700/50 border-gray-600 text-white' 
-                                    : 'bg-white border-slate-200 text-slate-900'
-                                }`}
-                                placeholder="Enter current password"
-                              />
-                              <button 
-                                type="button"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-3 top-3.5"
-                              >
-                                {showPassword ? 
-                                  <EyeOff className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`} /> : 
-                                  <Eye className={`w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-slate-500'}`} />
-                                }
-                              </button>
-                            </div>
-                          </div>
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${
-                              darkMode ? 'text-gray-300' : 'text-slate-700'
-                            }`}>
-                              New Password
-                            </label>
-                            <input
-                              type="password"
-                              name="newPassword"
-                              value={formData.newPassword}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                                darkMode 
-                                  ? 'bg-gray-700/50 border-gray-600 text-white' 
-                                  : 'bg-white border-slate-200 text-slate-900'
-                              }`}
-                              placeholder="Enter new password"
-                            />
-                          </div>
-                        </div>
-                        <div className="mt-4">
-                          <label className={`block text-sm font-medium mb-2 ${
-                            darkMode ? 'text-gray-300' : 'text-slate-700'
-                          }`}>
-                            Confirm New Password
-                          </label>
-                          <input
-                            type="password"
-                            name="confirmNewPassword"
-                            value={formData.confirmNewPassword}
-                            onChange={handleInputChange}
-                            className={`w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                              darkMode 
-                                ? 'bg-gray-700/50 border-gray-600 text-white' 
-                                : 'bg-white border-slate-200 text-slate-900'
-                            }`}
-                            placeholder="Confirm new password"
-                          />
-                        </div>
-                        <div className="flex justify-end mt-6">
-                          <button 
-                            onClick={handleSaveSecurity}
-                            className="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow hover:shadow-md"
-                          >
-                            Update Password
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className={`p-6 rounded-xl border ${
-                        darkMode 
-                          ? 'bg-red-900/20 border-red-900/30' 
-                          : 'bg-red-50 border-red-200'
-                      }`}>
-                        <h3 className={`font-bold mb-2 flex items-center ${
-                          darkMode ? 'text-red-200' : 'text-red-800'
+                        <p className={`text-sm transition-colors duration-200 ${
+                          darkMode ? 'text-gray-400' : 'text-slate-600'
                         }`}>
-                          <AlertCircle className="w-5 h-5 mr-2" />
-                          Delete Account
-                        </h3>
-                        <p className={`text-sm mb-4 ${
-                          darkMode ? 'text-red-300' : 'text-red-700'
-                        }`}>
-                          Once you delete your account, there is no going back. Please be certain.
+                          Receive email notifications about your account
                         </p>
-                        <button className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors">
-                          Delete Account
-                        </button>
                       </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="notifications.email"
+                          checked={formData.notifications.email}
+                          onChange={handleInputChange}
+                          className="sr-only peer"
+                        />
+                        <div className={`w-11 h-6 rounded-full peer ${
+                          darkMode 
+                            ? 'bg-gray-700 peer-checked:bg-blue-600' 
+                            : 'bg-slate-300 peer-checked:bg-blue-600'
+                        } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className={`font-medium transition-colors duration-200 ${
+                          darkMode ? 'text-gray-200' : 'text-slate-800'
+                        }`}>
+                          Product Updates
+                        </h3>
+                        <p className={`text-sm transition-colors duration-200 ${
+                          darkMode ? 'text-gray-400' : 'text-slate-600'
+                        }`}>
+                          Get notified about new features and updates
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="notifications.product"
+                          checked={formData.notifications.product}
+                          onChange={handleInputChange}
+                          className="sr-only peer"
+                        />
+                        <div className={`w-11 h-6 rounded-full peer ${
+                          darkMode 
+                            ? 'bg-gray-700 peer-checked:bg-blue-600' 
+                            : 'bg-slate-300 peer-checked:bg-blue-600'
+                        } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
+                      </label>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className={`font-medium transition-colors duration-200 ${
+                          darkMode ? 'text-gray-200' : 'text-slate-800'
+                        }`}>
+                          Security Alerts
+                        </h3>
+                        <p className={`text-sm transition-colors duration-200 ${
+                          darkMode ? 'text-gray-400' : 'text-slate-600'
+                        }`}>
+                          Important notifications about your account security
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          name="notifications.security"
+                          checked={formData.notifications.security}
+                          onChange={handleInputChange}
+                          className="sr-only peer"
+                        />
+                        <div className={`w-11 h-6 rounded-full peer ${
+                          darkMode 
+                            ? 'bg-gray-700 peer-checked:bg-blue-600' 
+                            : 'bg-slate-300 peer-checked:bg-blue-600'
+                        } peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all`}></div>
+                      </label>
                     </div>
                   </div>
-                )}
+                  
+                  <div className="mt-6">
+                    <button
+                      onClick={handleSaveNotifications}
+                      className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>Save Preferences</span>
+                    </button>
+                  </div>
+                </div>
 
-                {activeTab === 'appearance' && (
-                  <div>
-                    <h2 className={`text-2xl font-bold mb-6 transition-colors duration-200 ${
-                      darkMode ? 'text-white' : 'text-slate-900'
-                    }`}>
-                      Appearance Settings
-                    </h2>
-                    <div className="space-y-6">
-                      <div className={`p-6 rounded-xl ${
-                        darkMode ? 'bg-gray-700/30' : 'bg-slate-100'
+                {/* Divider */}
+                <div className={`my-8 h-px ${
+                  darkMode ? 'bg-gray-700/50' : 'bg-slate-200/50'
+                }`}></div>
+
+                {/* Security Section */}
+                <div className="mb-8">
+                  <h2 className={`text-2xl font-bold mb-6 transition-colors duration-200 ${
+                    darkMode ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    Security
+                  </h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 transition-colors duration-200 ${
+                        darkMode ? 'text-gray-300' : 'text-slate-700'
                       }`}>
-                        <h3 className={`font-bold mb-4 flex items-center ${
-                          darkMode ? 'text-white' : 'text-slate-900'
-                        }`}>
-                          <Palette className="w-5 h-5 mr-2" />
-                          Theme Preferences
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <button
-                            onClick={() => {
-                              setFormData({
-                                ...formData,
-                                appearance: {
-                                  ...formData.appearance,
-                                  theme: 'light'
-                                }
-                              })
-                            }}
-                            className={`p-4 rounded-xl border-2 transition-all ${
-                              formData.appearance.theme === 'light'
-                                ? 'border-indigo-500 bg-indigo-500/20'
-                                : darkMode 
-                                  ? 'border-gray-600 hover:border-gray-500' 
-                                  : 'border-gray-300 hover:border-gray-400'
-                            }`}
-                          >
-                            <div className="flex flex-col items-center">
-                              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 mb-2"></div>
-                              <span className={`font-medium ${
-                                darkMode ? 'text-white' : 'text-slate-900'
-                              }`}>
-                                Light
-                              </span>
-                            </div>
-                          </button>
-                          
-                          <button
-                            onClick={() => {
-                              setFormData({
-                                ...formData,
-                                appearance: {
-                                  ...formData.appearance,
-                                  theme: 'dark'
-                                }
-                              })
-                            }}
-                            className={`p-4 rounded-xl border-2 transition-all ${
-                              formData.appearance.theme === 'dark'
-                                ? 'border-indigo-500 bg-indigo-500/20'
-                                : darkMode 
-                                  ? 'border-gray-600 hover:border-gray-500' 
-                                  : 'border-gray-300 hover:border-gray-400'
-                            }`}
-                          >
-                            <div className="flex flex-col items-center">
-                              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-gray-800 to-gray-900 mb-2"></div>
-                              <span className={`font-medium ${
-                                darkMode ? 'text-white' : 'text-slate-900'
-                              }`}>
-                                Dark
-                              </span>
-                            </div>
-                          </button>
-                          
-                          <div className={`p-4 rounded-xl border-2 border-dashed ${
-                            darkMode ? 'border-gray-600' : 'border-gray-300'
-                          }`}>
-                            <div className="flex flex-col items-center">
-                              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-blue-400 to-purple-500 mb-2"></div>
-                              <span className={`font-medium ${
-                                darkMode ? 'text-gray-400' : 'text-slate-400'
-                              }`}>
-                                System
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className={`p-6 rounded-xl ${
-                        darkMode ? 'bg-gray-700/30' : 'bg-slate-100'
-                      }`}>
-                        <h3 className={`font-bold mb-4 flex items-center ${
-                          darkMode ? 'text-white' : 'text-slate-900'
-                        }`}>
-                          <Globe className="w-5 h-5 mr-2" />
-                          Language
-                        </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <label className={`block text-sm font-medium mb-2 ${
-                              darkMode ? 'text-gray-300' : 'text-slate-700'
-                            }`}>
-                              Interface Language
-                            </label>
-                            <select
-                              name="appearance.language"
-                              value={formData.appearance.language}
-                              onChange={handleInputChange}
-                              className={`w-full px-4 py-3 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors ${
-                                darkMode 
-                                  ? 'bg-gray-700/50 border-gray-600 text-white' 
-                                  : 'bg-white border-slate-200 text-slate-900'
-                              }`}
-                            >
-                              <option value="en">English</option>
-                              <option value="es">Spanish</option>
-                              <option value="fr">French</option>
-                              <option value="de">German</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex justify-end">
-                        <button 
-                          onClick={handleSaveAppearance}
-                          className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-xl transition-all shadow-md hover:shadow-lg"
-                        >
-                          Save Appearance
-                        </button>
-                      </div>
+                        Current Password
+                      </label>
+                      <input
+                        type="password"
+                        name="currentPassword"
+                        value={formData.currentPassword}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-xl border transition-colors duration-200 ${
+                          darkMode 
+                            ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400' 
+                            : 'bg-white border-slate-200/50 text-slate-900 placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400'
+                        }`}
+                        placeholder="Enter your current password"
+                      />
                     </div>
                   </div>
-                )}
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 transition-colors duration-200 ${
+                        darkMode ? 'text-gray-300' : 'text-slate-700'
+                      }`}>
+                        New Password
+                      </label>
+                      <input
+                        type="password"
+                        name="newPassword"
+                        value={formData.newPassword}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-xl border transition-colors duration-200 ${
+                          darkMode 
+                            ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400' 
+                            : 'bg-white border-slate-200/50 text-slate-900 placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400'
+                        }`}
+                        placeholder="Enter your new password"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 transition-colors duration-200 ${
+                        darkMode ? 'text-gray-300' : 'text-slate-700'
+                      }`}>
+                        Confirm New Password
+                      </label>
+                      <input
+                        type="password"
+                        name="confirmNewPassword"
+                        value={formData.confirmNewPassword}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-xl border transition-colors duration-200 ${
+                          darkMode 
+                            ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400' 
+                            : 'bg-white border-slate-200/50 text-slate-900 placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400'
+                        }`}
+                        placeholder="Confirm your new password"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <button
+                      onClick={handleSaveSecurity}
+                      className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>Update Password</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className={`my-8 h-px ${
+                  darkMode ? 'bg-gray-700/50' : 'bg-slate-200/50'
+                }`}></div>
+
+                {/* Appearance Section */}
+                <div>
+                  <h2 className={`text-2xl font-bold mb-6 transition-colors duration-200 ${
+                    darkMode ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    Appearance
+                  </h2>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 transition-colors duration-200 ${
+                        darkMode ? 'text-gray-300' : 'text-slate-700'
+                      }`}>
+                        Theme
+                      </label>
+                      <select
+                        name="appearance.theme"
+                        value={formData.appearance.theme}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-xl border transition-colors duration-200 ${
+                          darkMode 
+                            ? 'bg-gray-700/50 border-gray-600/50 text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400' 
+                            : 'bg-white border-slate-200/50 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400'
+                        }`}
+                      >
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className={`block text-sm font-semibold mb-2 transition-colors duration-200 ${
+                        darkMode ? 'text-gray-300' : 'text-slate-700'
+                      }`}>
+                        Language
+                      </label>
+                      <select
+                        name="appearance.language"
+                        value={formData.appearance.language}
+                        onChange={handleInputChange}
+                        className={`w-full px-4 py-3 rounded-xl border transition-colors duration-200 ${
+                          darkMode 
+                            ? 'bg-gray-700/50 border-gray-600/50 text-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400' 
+                            : 'bg-white border-slate-200/50 text-slate-900 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400'
+                        }`}
+                      >
+                        <option value="en">English</option>
+                        <option value="es">Spanish</option>
+                        <option value="fr">French</option>
+                        <option value="de">German</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6">
+                    <button
+                      onClick={handleSaveAppearance}
+                      className="flex items-center space-x-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>Save Appearance</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

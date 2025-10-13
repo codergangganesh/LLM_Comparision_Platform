@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   const apiKey = process.env.OPENROUTER_API_KEY;
   
   if (!apiKey) {

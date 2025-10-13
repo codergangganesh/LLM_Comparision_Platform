@@ -9,72 +9,72 @@ export type AiModel = {
 
 export const AVAILABLE_MODELS: AiModel[] = [
   { 
-    id: "openai/gpt-oss-20b:free", 
-    label: "GPT-5", 
+    id: "nvidia/nemotron-nano-9b-v2:free", 
+    label: "GPT-3.5 Turbo", 
     provider: "OpenAI", 
     contextWindowK: 16000,
     description: "Fast and cost-effective model for simple tasks",
     capabilities: ["text", "code"]
   },
   { 
-    id: "deepseek/deepseek-r1-0528-qwen3-8b:free", 
-    label: "Deepseek-R1", 
-    provider: "Deepseek", 
+    id: "gpt-4o-mini", 
+    label: "GPT-4o Mini", 
+    provider: "OpenAI", 
     contextWindowK: 128000,
     description: "Small model, multimodal capabilities, great for everyday use",
     capabilities: ["text", "code", "image"]
   },
   { 
-    id: "qwen/qwen3-4b:free", 
-    label: "Claud 2.5", 
+    id: "claude-3-haiku-free", 
+    label: "Claude 3 Haiku (Free)", 
     provider: "Anthropic", 
     contextWindowK: 2000,
     description: "Anthropic's balanced intelligence model with free tier",
     capabilities: ["text", "analysis", "reasoning"]
   },
   { 
-    id: "nvidia/nemotron-nano-9b-v2:free", 
-    label: "Gemini 2.5", 
+    id: "google/gemma-3n-e2b-it:free", 
+    label: "Gemini Flash 1.5 (Free)", 
     provider: "Google", 
     contextWindowK: 10000,
     description: "Google's fast multimodal AI model with free tier",
     capabilities: ["text", "image", "video", "audio"]
   },
   { 
-    id: "meta-llama/llama-3.3-8b-instruct:free", 
-    label: "Meta-llama", 
+    id: "llama-3.1-8b-free", 
+    label: "LLaMA 3.1 8B (Free)", 
     provider: "Meta", 
     contextWindowK: 8000,
     description: "Meta's efficient large language model with free tier",
     capabilities: ["text", "reasoning"]
   },
   { 
-    id: "qwen/qwen3-235b-a22b:free", 
-    label: "Qwen3-235b", 
+    id: "mistral-7b-free", 
+    label: "Mistral 7B (Free)", 
     provider: "Mistral AI", 
     contextWindowK: 8000,
     description: "Mistral AI's efficient model with free tier",
     capabilities: ["text", "code"]
   },
   { 
-    id: "mistralai/mistral-small-3.2-24b-instruct:free", 
-    label: "Mistrail", 
+    id: "phi-3-mini-free", 
+    label: "Phi-3 Mini (Free)", 
     provider: "Microsoft", 
     contextWindowK: 128000,
     description: "Microsoft's efficient model with very long context window",
     capabilities: ["text", "code", "reasoning"]
   },
   { 
-    id: "z-ai/glm-4.5-air:free", 
-    label: "Grok-4", 
-    provider: "xAI", 
+    id: "auto-select", 
+    label: "Auto Select", 
+    provider: "OpenRouter", 
     contextWindowK: 128000,
     description: "Automatically select the best model for your request",
     capabilities: ["text", "code", "analysis"]
   },
   { 
-    id: "nousresearch/deephermes-3-llama-3-8b-preview:free", 
-    label: "deephermes", 
+    id: "hermes-3-8b-free", 
+    label: "Hermes 3 8B (Free)", 
     provider: "Nous Research", 
     contextWindowK: 8000,
     description: "Highly capable reasoning model with free tier",

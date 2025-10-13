@@ -13,7 +13,7 @@ interface LineChartProps {
 
 const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabels }) => {
   // Find min and max values for scaling
-  let allValues: number[] = []
+  const allValues: number[] = []
   metrics.forEach(metric => {
     data.forEach(d => {
       if (typeof d[metric] === 'number') {

@@ -425,7 +425,7 @@ export default function VideoTutorialPopup({ isOpen, onClose }: VideoTutorialPop
                               <label className="block text-gray-400 text-sm mb-2">Your Prompt</label>
                               <div className="bg-gray-900/50 rounded-xl p-4 border border-gray-700">
                                 <div className="text-white mb-3">
-                                  "Explain quantum computing in simple terms"
+                                  &quot;Explain quantum computing in simple terms&quot;
                                 </div>
                                 <div className="flex items-center text-gray-500 text-sm">
                                   <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
@@ -568,7 +568,7 @@ export default function VideoTutorialPopup({ isOpen, onClose }: VideoTutorialPop
                         </div>
                       </div>
                       
-                      <h4 className="text-3xl font-bold text-white mb-4">You're Ready to Go!</h4>
+                      <h4 className="text-3xl font-bold text-white mb-4">You&#39;re Ready to Go!</h4>
                       <p className="text-gray-300 mb-10 text-lg max-w-2xl mx-auto">
                         Start comparing AI models today and find the perfect response for every task. 
                         Join thousands of researchers and developers who trust AI Fiesta.

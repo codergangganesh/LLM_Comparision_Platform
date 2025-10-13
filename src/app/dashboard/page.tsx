@@ -6,13 +6,13 @@ import { useDarkMode } from '@/contexts/DarkModeContext'
 import SharedSidebar from '@/components/layout/SharedSidebar'
 import BarChart from '@/components/dashboard/BarChart'
 import LineChart from '@/components/dashboard/LineChart'
-import DonutChart from '@/components/dashboard/DonutChart'
 import SimpleCircleChart from '@/components/dashboard/SimpleCircleChart'
 import ResponseTimeDistribution from '@/components/dashboard/ResponseTimeDistribution'
 import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
 import OptimizedPageTransitionLoader from '@/components/ui/OptimizedPageTransitionLoader'
 import { useOptimizedLoading } from '@/contexts/OptimizedLoadingContext'
-import { dashboardService, DashboardMetrics, UsageData, ModelUsageData, TimeSeriesData } from '@/services/dashboard.service'
+import { dashboardService } from '@/services/dashboard.service'
+import { chatHistoryService } from '@/services/chatHistory.service'
 import { ChatSession } from '@/types/chat'
 import { createClient } from '@/utils/supabase/client'
 
@@ -22,8 +22,7 @@ import {
   Brain,
   Activity,
   Sparkles,
-  Download,
-  Bell
+  Download
 } from 'lucide-react'
 import SimpleProfileIcon from '@/components/layout/SimpleProfileIcon'
 import NotificationBell from '@/components/ui/NotificationBell'
@@ -33,7 +32,7 @@ interface MetricCard {
   value: string
   change: string
   trend: 'up' | 'down'
-  icon: any
+  icon: React.ComponentType<{ className?: string }>
   color: string
 }
 
@@ -43,7 +42,7 @@ export default function DashboardPage() {
   const { darkMode } = useDarkMode()
   const { setPageLoading } = useOptimizedLoading()
   const supabase = createClient()
-  const realtimeSubscriptionRef = useRef<any>(null)
+  const realtimeSubscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
   
   const [metrics, setMetrics] = useState<MetricCard[]>([
     {
@@ -80,23 +79,24 @@ export default function DashboardPage() {
     }
   ])
   
-  const [usageData, setUsageData] = useState<UsageData>({
+  const [usageData, setUsageData] = useState({
     apiCalls: 0,
     comparisons: 0,
     storage: 0
   })
   
-  const [responseTimeData, setResponseTimeData] = useState<ModelUsageData[]>([])
-  const [messagesTypedData, setMessagesTypedData] = useState<ModelUsageData[]>([])
-  const [modelDataTimeData, setModelDataTimeData] = useState<ModelUsageData[]>([])
-  const [responseTimeDistributionData, setResponseTimeDistributionData] = useState<ModelUsageData[]>([])
-  const [lineChartData, setLineChartData] = useState<TimeSeriesData[]>([])
-  const [lineChartMetrics, setLineChartMetrics] = useState<string[]>([])
-  const [lineChartMetricLabels, setLineChartMetricLabels] = useState<Record<string, string>>({})
-  const [userPlan] = useState('free')
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [loadingData, setLoadingData] = useState(true)
   const [isExportOpen, setIsExportOpen] = useState(false)
+  
+  const [responseTimeData, setResponseTimeData] = useState<{name: string; value: number; color: string}[]>([])
+  const [messagesTypedData, setMessagesTypedData] = useState<{name: string; value: number; color: string}[]>([])
+  const [modelDataTimeData, setModelDataTimeData] = useState<{name: string; value: number; color: string}[]>([])
+  const [responseTimeDistributionData, setResponseTimeDistributionData] = useState<{name: string; value: number; color: string}[]>([])
+  const [lineChartData, setLineChartData] = useState<{[key: string]: string | number; period: string}[]>([])
+  const [lineChartMetrics, setLineChartMetrics] = useState<string[]>([])
+  const [lineChartMetricLabels, setLineChartMetricLabels] = useState<Record<string, string>>({})
+  const [userPlan] = useState('free')
   
   // Reset color map when component mounts
   useEffect(() => {
@@ -120,7 +120,7 @@ export default function DashboardPage() {
       setSessions(fetchedSessions)
       
       // Calculate metrics - use cumulative values for cards
-      const dashboardMetrics = dashboardService.calculateDashboardMetrics(fetchedSessions)
+      dashboardService.calculateDashboardMetrics(fetchedSessions)
       
       // Preserve cumulative metrics for display in cards
       // This ensures that even when sessions are deleted, the numerical cards retain their values
@@ -161,7 +161,7 @@ export default function DashboardPage() {
       ])
       
       // Calculate usage data - use cumulative values for cards
-      const usage = dashboardService.getUsageData(fetchedSessions)
+      dashboardService.getUsageData(fetchedSessions)
       
       // Preserve cumulative usage data for display in cards
       // This ensures that even when sessions are deleted, the numerical cards retain their values
@@ -198,7 +198,7 @@ export default function DashboardPage() {
       setLoadingData(true)
       try {
         // Fetch chat sessions
-        const fetchedSessions = await dashboardService.getChatSessions()
+        const fetchedSessions = await chatHistoryService.getChatSessions()
         await updateDashboardData(fetchedSessions || [])
       } catch (error) {
         console.error('Error fetching dashboard data:', error)
@@ -229,7 +229,7 @@ export default function DashboardPage() {
           console.log('New chat session added:', payload.new)
           // Clear cache and fetch updated data
           dashboardService.clearCache()
-          const fetchedSessions = await dashboardService.getChatSessions(false)
+          const fetchedSessions = await chatHistoryService.getChatSessions(false)
           await updateDashboardData(fetchedSessions || [])
         }
       )
@@ -245,7 +245,7 @@ export default function DashboardPage() {
           console.log('Chat session updated:', payload.new)
           // Clear cache and fetch updated data
           dashboardService.clearCache()
-          const fetchedSessions = await dashboardService.getChatSessions(false)
+          const fetchedSessions = await chatHistoryService.getChatSessions(false)
           await updateDashboardData(fetchedSessions || [])
         }
       )
@@ -263,7 +263,7 @@ export default function DashboardPage() {
           // IMPORTANT: When sessions are deleted, we want to preserve cumulative metrics
           // but update the charts to show "No data available"
           dashboardService.clearCache()
-          const fetchedSessions = await dashboardService.getChatSessions(false)
+          const fetchedSessions = await chatHistoryService.getChatSessions(false)
           await updateDashboardData(fetchedSessions || [])
         }
       )
@@ -277,7 +277,7 @@ export default function DashboardPage() {
         supabase.removeChannel(realtimeSubscriptionRef.current)
       }
     }
-  }, [user, loading])
+  }, [user, loading, supabase])
 
   // Show loading while checking auth status
   if (loading || loadingData) {
@@ -446,7 +446,7 @@ export default function DashboardPage() {
                 <p className={`mt-1 transition-colors duration-200 ${
                   darkMode ? 'text-gray-300' : 'text-slate-600'
                 }`}>
-                  Welcome back! Here's your AI platform overview.
+                  Welcome back! Here&#39;s your AI platform overview.
                 </p>
               </div>
               

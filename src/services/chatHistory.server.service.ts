@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { ChatSession } from '@/types/chat'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 export interface DatabaseChatSession {
   id: string
   user_id: string
   message: string
-  responses: any[]
+  responses: unknown[]
   timestamp: string
   selected_models: string[]
   best_response?: string
@@ -14,21 +15,24 @@ export interface DatabaseChatSession {
 }
 
 export class ChatHistoryServerService {
-  private supabase = createClient()
+  async getSupabaseClient() {
+    return await createClient()
+  }
 
   async saveChatSession(session: ChatSession, userId: string): Promise<boolean> {
     try {
-      const { error } = await this.supabase.from('chat_sessions').insert({
+      const supabase = await this.getSupabaseClient()
+      const { error } = await supabase.from('chat_sessions').insert({
         id: session.id,
         user_id: userId,
         message: session.message,
-        responses: session.responses,
+        responses: session.responses as unknown[],
         timestamp: session.timestamp.toISOString(),
         selected_models: session.selectedModels,
         best_response: session.bestResponse,
         response_time: session.responseTime,
         created_at: new Date().toISOString()
-      })
+      } as DatabaseChatSession)
 
       if (error) {
         console.error('Error saving chat session:', error)
@@ -44,7 +48,8 @@ export class ChatHistoryServerService {
 
   async getChatSessions(userId: string): Promise<ChatSession[] | null> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabaseClient()
+      const { data, error } = await supabase
         .from('chat_sessions')
         .select('*')
         .eq('user_id', userId)
@@ -56,10 +61,10 @@ export class ChatHistoryServerService {
       }
 
       // Convert database format to ChatSession format
-      return data.map((session: any) => ({
+      return (data as DatabaseChatSession[]).map(session => ({
         id: session.id,
         message: session.message,
-        responses: session.responses,
+        responses: session.responses as ChatSession['responses'],
         timestamp: new Date(session.timestamp),
         selectedModels: session.selected_models,
         bestResponse: session.best_response,
@@ -73,7 +78,8 @@ export class ChatHistoryServerService {
 
   async deleteChatSession(sessionId: string, userId: string): Promise<boolean> {
     try {
-      const { error } = await this.supabase
+      const supabase = await this.getSupabaseClient()
+      const { error } = await supabase
         .from('chat_sessions')
         .delete()
         .eq('id', sessionId)

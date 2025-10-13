@@ -72,7 +72,7 @@ export default function ModernFeedbackAndPricing() {
           schema: 'public',
           table: 'feedback_messages'
         },
-        (payload: any) => {
+        (payload: { new: { id: number, created_at: string, name: string, email: string, rating: number, message: string, user_id?: string } }) => {
           setFeedbackList(prev => [payload.new, ...prev.slice(0, 2)])
         }
       )
@@ -318,9 +318,9 @@ export default function ModernFeedbackAndPricing() {
       
       // Show success message
       alert('Message sent successfully! Our team will get back to you soon.')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error sending message:', error)
-      alert(error.message || 'An unexpected error occurred')
+      alert((error as Error).message || 'An unexpected error occurred')
     } finally {
       setIsSubmitting(false)
     }
