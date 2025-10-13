@@ -19,8 +19,7 @@ import {
   XCircle
 } from 'lucide-react'
 
-export default function ProfilePage() {
-  const { user, loading } = useAuth()
+export default function DashboardProfileRedirect() {
   const router = useOptimizedRouter()
   const { darkMode, toggleDarkMode } = useDarkMode()
   const { setPageLoading } = useOptimizedLoading()

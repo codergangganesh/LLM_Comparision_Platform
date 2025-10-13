@@ -3,6 +3,7 @@
 import React from 'react'
 import { dashboardService } from '@/services/dashboard.service'
 import { AI_MODELS } from '@/config/ai-models'
+import { TrendingUp } from 'lucide-react'
 
 interface LineChartProps {
   data: { period: string; [key: string]: string | number }[]
@@ -26,8 +27,18 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
   const maxValue = allValues.length > 0 ? Math.max(...allValues, 0) : 1
   const range = maxValue - minValue || 1 // Avoid division by zero
   
+  // Calculate trend for each metric
+  const calculateTrend = (metric: string) => {
+    if (data.length < 2) return 0
+    
+    const firstValue = typeof data[0][metric] === 'number' ? data[0][metric] as number : 0
+    const lastValue = typeof data[data.length - 1][metric] === 'number' ? data[data.length - 1][metric] as number : 0
+    
+    return lastValue - firstValue
+  }
+  
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-300">
       <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{title}</h3>
       {data.length > 0 && metrics.length > 0 ? (
         <div className="h-64">
@@ -58,6 +69,9 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
                 // Get distinct color for this model
                 const model = AI_MODELS.find(m => m.displayName === metric);
                 const color = dashboardService.getModelColor(model?.id || metric);
+                
+                // Calculate trend
+                const trend = calculateTrend(metric)
                 
                 return (
                   <div key={metric} className="absolute inset-0 ml-8">
@@ -103,7 +117,7 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
                           {/* Line to next point */}
                           {index < data.length - 1 && typeof data[index + 1][metric] === 'number' && (
                             <div
-                              className={`absolute h-0.5 ${colorClass}`}
+                              className={`absolute h-0.5 ${colorClass.replace('bg-', 'bg-')} shadow-sm`}
                               style={{
                                 left: `${x}%`,
                                 top: `${y}%`,
@@ -115,7 +129,7 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
                           
                           {/* Point */}
                           <div
-                            className={`absolute w-3 h-3 rounded-full ${colorClass} border-2 border-white dark:border-gray-800`}
+                            className={`absolute w-3 h-3 rounded-full ${colorClass} border-2 border-white dark:border-gray-800 shadow-sm`}
                             style={{
                               left: `${x}%`,
                               top: `${y}%`,
@@ -132,18 +146,19 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
               {/* X-axis labels */}
               <div className="absolute bottom-0 left-8 right-0 flex justify-between text-xs text-gray-500 dark:text-gray-400">
                 {data.map((point, index) => (
-                  <span key={index}>{point.period}</span>
+                  <span key={index} className="transform -translate-x-1/2">{point.period}</span>
                 ))}
               </div>
             </div>
           </div>
           
-          {/* Legend */}
+          {/* Legend with trends */}
           <div className="flex flex-wrap gap-4 mt-4">
             {metrics.map((metric) => {
               // Get distinct color for this model
               const model = AI_MODELS.find(m => m.displayName === metric);
               const color = dashboardService.getModelColor(model?.id || metric);
+              const trend = calculateTrend(metric)
               
               // Convert hex color to Tailwind-compatible class for legend
               const getColorClass = (hexColor: string) => {
@@ -179,6 +194,12 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
                   <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">
                     {metricLabels[metric] || metric}
                   </span>
+                  {trend !== 0 && (
+                    <div className={`ml-2 flex items-center text-xs ${trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      <TrendingUp className={`w-3 h-3 mr-1 ${trend < 0 ? 'rotate-180' : ''}`} />
+                      <span>{Math.abs(trend).toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
               )
             })}
