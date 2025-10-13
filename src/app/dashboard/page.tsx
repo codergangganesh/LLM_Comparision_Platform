@@ -25,7 +25,6 @@ import {
   Sparkles,
   Download,
   Bell,
-  Filter,
   MessageSquare,
   Database
 } from 'lucide-react'
@@ -93,8 +92,6 @@ export default function DashboardPage() {
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [loadingData, setLoadingData] = useState(true)
   const [isExportOpen, setIsExportOpen] = useState(false)
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [selectedModels, setSelectedModels] = useState<string[]>([])
   const [availableModels, setAvailableModels] = useState<any[]>([])
   const [hasUsedModels, setHasUsedModels] = useState(false)
   
@@ -128,14 +125,10 @@ export default function DashboardPage() {
     setAvailableModels(AI_MODELS)
   }, [])
 
-  // Filter sessions based on selected models
-  const filterSessions = (sessions: ChatSession[], models: string[]): ChatSession[] => {
-    // Filter by models
-    let filteredSessions = models.length === 0 ? sessions : sessions.filter(session => 
-      session.selectedModels?.some(model => models.includes(model))
-    )
-    
-    return filteredSessions
+  // Filter sessions (removed filtering by models)
+  const filterSessions = (sessions: ChatSession[]): ChatSession[] => {
+    // Return all sessions without filtering
+    return sessions
   }
 
   // Function to update dashboard data
@@ -149,8 +142,8 @@ export default function DashboardPage() {
         const hasSessions = sessionsToUse.length > 0
         setHasUsedModels(hasSessions)
         
-        // Filter sessions based on selected models only (removed timeRange)
-        const filteredSessions = filterSessions(sessionsToUse, selectedModels)
+        // Use all sessions without filtering
+        const filteredSessions = filterSessions(sessionsToUse)
         setSessions(filteredSessions)
         
         // Calculate metrics based on actual session data
@@ -214,9 +207,6 @@ export default function DashboardPage() {
           metricLabels[metric] = metric
         })
         setLineChartMetricLabels(metricLabels)
-        
-        // Update last updated time
-        // setLastUpdated(new Date()) - Removed as we're removing the last updated display
       }
     } catch (error) {
       console.error('Error updating dashboard data:', error)
@@ -312,25 +302,6 @@ export default function DashboardPage() {
     }
   }, [user, loading])
 
-  // Handle filter changes
-  useEffect(() => {
-    if (!user || loading) return
-    
-    const updateFilteredData = async () => {
-      setLoadingData(true)
-      try {
-        const fetchedSessions = await dashboardService.getChatSessions(false)
-        await updateDashboardData(fetchedSessions || [])
-      } catch (error) {
-        console.error('Error updating filtered data:', error)
-      } finally {
-        setLoadingData(false)
-      }
-    }
-    
-    updateFilteredData()
-  }, [selectedModels, user, loading])
-  
   // Show loading while checking auth status
   if (loading || loadingData) {
     return <OptimizedPageTransitionLoader message="Loading dashboard..." />
@@ -471,25 +442,6 @@ export default function DashboardPage() {
     return Math.min(100, (current / limit) * 100)
   }
 
-  // Toggle model selection
-  const toggleModelSelection = (modelId: string) => {
-    if (selectedModels.includes(modelId)) {
-      setSelectedModels(selectedModels.filter(id => id !== modelId))
-    } else {
-      setSelectedModels([...selectedModels, modelId])
-    }
-  }
-
-  // Select all models
-  const selectAllModels = () => {
-    setSelectedModels(availableModels.map(model => model.id))
-  }
-
-  // Clear all model selections
-  const clearAllModels = () => {
-    setSelectedModels([])
-  }
-
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
       darkMode 
@@ -534,124 +486,6 @@ export default function DashboardPage() {
                 
                 {/* Simple Profile Icon */}
                 <SimpleProfileIcon />
-                
-                {/* Filter Dropdown - Moved to be next to Export */}
-                <div className="relative">
-                  <button 
-                    onClick={() => setIsFilterOpen(!isFilterOpen)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md ${
-                      darkMode 
-                        ? 'bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white border border-gray-600' 
-                        : 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 border border-gray-300'
-                    }`}
-                  >
-                    <Filter className="w-4 h-4" />
-                    <span className="font-medium">Filter</span>
-                  </button>
-                  
-                  {/* Dropdown menu for model filtering */}
-                  {isFilterOpen && (
-                    <div 
-                      className={`absolute right-0 w-80 rounded-xl shadow-xl z-20 overflow-hidden transform transition-all duration-200 ease-in-out mt-2 ${
-                        darkMode 
-                          ? 'bg-gray-800/95 border border-gray-700 backdrop-blur-xl' 
-                          : 'bg-white/95 border border-slate-200 backdrop-blur-xl'
-                      }`}
-                    >
-                      <div className="py-3">
-                        <div className={`px-4 py-3 border-b ${
-                          darkMode ? 'border-gray-700' : 'border-slate-200'
-                        }`}>
-                          <div className="flex justify-between items-center">
-                            <h3 className={`text-sm font-semibold ${
-                              darkMode ? 'text-gray-200' : 'text-slate-800'
-                            }`}>
-                              Filter by Models
-                            </h3>
-                            <div className="flex space-x-2">
-                              <button 
-                                onClick={selectAllModels}
-                                className={`text-xs px-2 py-1 rounded ${
-                                  darkMode 
-                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                }`}
-                              >
-                                Select All
-                              </button>
-                              <button 
-                                onClick={clearAllModels}
-                                className={`text-xs px-2 py-1 rounded ${
-                                  darkMode 
-                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                }`}
-                              >
-                                Clear
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="max-h-60 overflow-y-auto">
-                          {availableModels.map((model) => (
-                            <div 
-                              key={model.id}
-                              className={`px-4 py-2 flex items-center justify-between cursor-pointer transition-colors ${
-                                darkMode 
-                                  ? 'hover:bg-gray-700/50' 
-                                  : 'hover:bg-slate-100'
-                              } ${
-                                selectedModels.includes(model.id) 
-                                  ? darkMode 
-                                    ? 'bg-blue-900/30' 
-                                    : 'bg-blue-100'
-                                  : ''
-                              }`}
-                              onClick={() => toggleModelSelection(model.id)}
-                            >
-                              <div className="flex items-center space-x-3">
-                                <div className={`w-3 h-3 rounded-full ${
-                                  selectedModels.includes(model.id) 
-                                    ? 'bg-blue-500' 
-                                    : darkMode 
-                                      ? 'bg-gray-500' 
-                                      : 'bg-gray-400'
-                                }`}></div>
-                                <span className={`text-sm ${
-                                  darkMode 
-                                    ? selectedModels.includes(model.id) 
-                                      ? 'text-white font-medium' 
-                                      : 'text-gray-300'
-                                    : selectedModels.includes(model.id) 
-                                      ? 'text-gray-900 font-medium' 
-                                      : 'text-gray-700'
-                                }`}>
-                                  {model.displayName}
-                                </span>
-                              </div>
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                darkMode 
-                                  ? 'bg-gray-700 text-gray-400' 
-                                  : 'bg-gray-200 text-gray-600'
-                              }`}>
-                                {model.provider}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                        <div className={`px-4 py-3 border-t ${
-                          darkMode ? 'border-gray-700' : 'border-slate-200'
-                        }`}>
-                          <div className="text-xs text-center">
-                            {selectedModels.length > 0 
-                              ? `${selectedModels.length} model${selectedModels.length > 1 ? 's' : ''} selected` 
-                              : 'No models selected (showing all)'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
                 
                 {/* Export Dropdown - Modern Design */}
                 <div className="relative">
