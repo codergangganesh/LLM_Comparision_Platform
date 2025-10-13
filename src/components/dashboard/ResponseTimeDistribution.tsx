@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { Clock, TrendingUp, TrendingDown } from 'lucide-react'
 
 interface ResponseTimeDistributionProps {
@@ -16,8 +16,25 @@ const ResponseTimeDistribution: React.FC<ResponseTimeDistributionProps> = ({ dat
   // Calculate average response time
   const averageTime = data.length > 0 ? data.reduce((sum, item) => sum + item.value, 0) / data.length : 0
   
+  const [hoveredItem, setHoveredItem] = useState<{name: string, value: number, percentage: number} | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+  
+  const handleItemHover = (e: React.MouseEvent, item: {name: string, value: number}) => {
+    const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0
+    setHoveredItem({
+      name: item.name,
+      value: item.value,
+      percentage
+    })
+    setTooltipPosition({ x: e.clientX, y: e.clientY })
+  }
+  
+  const handleItemLeave = () => {
+    setHoveredItem(null)
+  }
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-300">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-300 relative">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
         {data.length > 0 && (
@@ -46,11 +63,17 @@ const ResponseTimeDistribution: React.FC<ResponseTimeDistributionProps> = ({ dat
               const isAboveAverage = diffFromAvg > 0
               
               return (
-                <div key={index} className="flex items-center py-3 border-b border-gray-100 dark:border-gray-800">
+                <div 
+                  key={index} 
+                  className="flex items-center py-3 border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 rounded px-2 transition-colors"
+                  onMouseEnter={(e) => handleItemHover(e, item)}
+                  onMouseMove={(e) => setTooltipPosition({ x: e.clientX, y: e.clientY })}
+                  onMouseLeave={handleItemLeave}
+                >
                   <div className="w-1/4">
                     <div className="flex items-center">
                       <div 
-                        className="w-3 h-3 rounded-full mr-2" 
+                        className="w-3 h-3 rounded-full mr-2 cursor-pointer hover:opacity-80" 
                         style={{ backgroundColor: item.color }}
                       ></div>
                       <span className="text-sm font-medium text-gray-900 dark:text-white">
@@ -78,7 +101,7 @@ const ResponseTimeDistribution: React.FC<ResponseTimeDistributionProps> = ({ dat
                   <div className="w-2/4">
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div 
-                        className="h-2 rounded-full transition-all duration-500 ease-out" 
+                        className="h-2 rounded-full transition-all duration-500 ease-out cursor-pointer hover:opacity-90" 
                         style={{ 
                           width: `${maxValue > 0 ? (item.value / maxValue) * 100 : 0}%`,
                           backgroundColor: item.color
@@ -99,6 +122,27 @@ const ResponseTimeDistribution: React.FC<ResponseTimeDistributionProps> = ({ dat
             </svg>
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-center">No data available<br/><span className="text-sm">History has been cleared</span></p>
+        </div>
+      )}
+      
+      {/* Tooltip */}
+      {hoveredItem && (
+        <div 
+          className="fixed z-50 bg-gray-900 text-white text-xs rounded py-2 px-3 shadow-lg pointer-events-none"
+          style={{
+            left: tooltipPosition.x + 10,
+            top: tooltipPosition.y - 10,
+            transform: 'translateY(-100%)'
+          }}
+        >
+          <div className="font-medium">{hoveredItem.name}</div>
+          <div className="flex items-center mt-1">
+            <span>{hoveredItem.value}{unit}</span>
+            <span className="ml-2 text-gray-300">
+              ({hoveredItem.percentage.toFixed(1)}% of max)
+            </span>
+          </div>
+          <div className="absolute bottom-0 left-4 w-3 h-3 bg-gray-900 transform rotate-45 translate-y-1/2"></div>
         </div>
       )}
     </div>

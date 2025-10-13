@@ -103,19 +103,17 @@ export class DashboardService {
 
   // Calculate dashboard metrics based on chat sessions
   calculateDashboardMetrics(sessions: ChatSession[]): DashboardMetrics {
-    const cacheKey = `dashboardMetrics_${sessions.length}`
-    
-    // Check cache first
-    if (this.cache.has(cacheKey)) {
-      return this.cache.get(cacheKey) as DashboardMetrics
-    }
-    
+    // Calculate actual metrics based on current sessions
     const totalComparisons = sessions.length
     const allSelectedModels = sessions.flatMap(session => session.selectedModels || [])
     const uniqueModels = Array.from(new Set(allSelectedModels)).length
     const totalResponses = sessions.reduce((sum, session) => sum + (session.responses?.length || 0), 0)
-    const accuracyScore = totalResponses > 0 ? Math.min(100, Math.round((totalComparisons / totalResponses) * 100)) : 0
-    const apiUsage = Math.min(100, Math.round((totalComparisons / 100) * 100)) // Placeholder calculation
+    
+    // Calculate accuracy score based on responses vs comparisons
+    const accuracyScore = totalComparisons > 0 ? Math.min(100, Math.round((totalResponses / totalComparisons) * 100)) : 0
+    
+    // Calculate API usage based on comparisons (simplified)
+    const apiUsage = Math.min(100, Math.round((totalComparisons / 50) * 100)) // Assuming 50 comparisons as max for demo
 
     // Update cumulative metrics
     this.cumulativeMetrics = {
@@ -128,17 +126,12 @@ export class DashboardService {
     // Save to localStorage
     this.saveCumulativeMetricsToStorage()
 
-    const result = { ...this.cumulativeMetrics }
-    
-    // Cache the result
-    this.cache.set(cacheKey, result)
-    const timeout = setTimeout(() => {
-      this.cache.delete(cacheKey)
-      this.cacheTimeouts.delete(cacheKey)
-    }, this.CACHE_DURATION)
-    this.cacheTimeouts.set(cacheKey, timeout)
-    
-    return result
+    return { 
+      totalComparisons,
+      modelsAnalyzed: uniqueModels,
+      accuracyScore,
+      apiUsage
+    }
   }
 
   // Get usage data for the user
@@ -188,27 +181,21 @@ export class DashboardService {
     // Convert bytes to MB
     const storageMB = totalStorageBytes / (1024 * 1024)
 
-    // Update cumulative usage data for apiCalls and comparisons (these should be cumulative)
+    // Update cumulative usage data
     this.cumulativeUsageData = {
-      apiCalls: Math.max(this.cumulativeUsageData.apiCalls, apiCalls),
-      comparisons: Math.max(this.cumulativeUsageData.comparisons, comparisons),
-      storage: storageMB // Storage should reflect current usage, not cumulative
+      apiCalls,
+      comparisons,
+      storage: storageMB
     }
 
     // Save to localStorage
     this.saveCumulativeMetricsToStorage()
 
-    const result = { ...this.cumulativeUsageData }
-    
-    // Cache the result
-    this.cache.set(cacheKey, result)
-    const timeout = setTimeout(() => {
-      this.cache.delete(cacheKey)
-      this.cacheTimeouts.delete(cacheKey)
-    }, this.CACHE_DURATION)
-    this.cacheTimeouts.set(cacheKey, timeout)
-    
-    return result
+    return { 
+      apiCalls,
+      comparisons,
+      storage: storageMB
+    }
   }
 
   // Get response time data by model
@@ -475,6 +462,14 @@ export class DashboardService {
     this.cache.clear()
     this.cacheTimeouts.forEach(timeout => clearTimeout(timeout))
     this.cacheTimeouts.clear()
+  }
+  
+  // Get sessions within a specific date range
+  getSessionsByDateRange(sessions: ChatSession[], startDate: Date, endDate: Date): ChatSession[] {
+    return sessions.filter(session => {
+      const sessionDate = new Date(session.timestamp);
+      return sessionDate >= startDate && sessionDate <= endDate;
+    });
   }
 }
 

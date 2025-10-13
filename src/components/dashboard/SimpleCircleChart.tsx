@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { MessageSquare, TrendingUp, TrendingDown } from 'lucide-react'
 
 interface SimpleCircleChartProps {
@@ -15,8 +15,25 @@ const SimpleCircleChart: React.FC<SimpleCircleChartProps> = ({ data, title }) =>
   // Calculate average value
   const average = data.length > 0 ? total / data.length : 0
   
+  const [hoveredSegment, setHoveredSegment] = useState<{name: string, value: number, percentage: number} | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+  
+  const handleSegmentHover = (e: React.MouseEvent, segment: {name: string, value: number}) => {
+    const percentage = total > 0 ? (segment.value / total) * 100 : 0
+    setHoveredSegment({
+      name: segment.name,
+      value: segment.value,
+      percentage
+    })
+    setTooltipPosition({ x: e.clientX, y: e.clientY })
+  }
+  
+  const handleSegmentLeave = () => {
+    setHoveredSegment(null)
+  }
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-shadow duration-300">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-shadow duration-300 relative">
       <div className="flex justify-between items-center mb-6 pb-2 border-b border-gray-100 dark:border-gray-700">
         <h3 className="text-xl font-bold text-gray-900 dark:text-white">
           {title}
@@ -55,11 +72,14 @@ const SimpleCircleChart: React.FC<SimpleCircleChartProps> = ({ data, title }) =>
               return (
                 <div 
                   key={index} 
-                  className="flex items-center justify-between py-2"
+                  className="flex items-center justify-between py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-2 transition-colors"
+                  onMouseEnter={(e) => handleSegmentHover(e, segment)}
+                  onMouseMove={(e) => setTooltipPosition({ x: e.clientX, y: e.clientY })}
+                  onMouseLeave={handleSegmentLeave}
                 >
                   <div className="flex items-center">
                     <div 
-                      className="w-3 h-3 rounded-full mr-2" 
+                      className="w-3 h-3 rounded-full mr-2 cursor-pointer hover:opacity-80" 
                       style={{ backgroundColor: segment.color }}
                     ></div>
                     <span className="text-sm text-gray-700 dark:text-gray-300 truncate max-w-[100px]">
@@ -99,6 +119,27 @@ const SimpleCircleChart: React.FC<SimpleCircleChartProps> = ({ data, title }) =>
           <p className="text-gray-400 dark:text-gray-500 text-center text-sm mt-1">
             History has been cleared
           </p>
+        </div>
+      )}
+      
+      {/* Tooltip */}
+      {hoveredSegment && (
+        <div 
+          className="fixed z-50 bg-gray-900 text-white text-xs rounded py-2 px-3 shadow-lg pointer-events-none"
+          style={{
+            left: tooltipPosition.x + 10,
+            top: tooltipPosition.y - 10,
+            transform: 'translateY(-100%)'
+          }}
+        >
+          <div className="font-medium">{hoveredSegment.name}</div>
+          <div className="flex items-center mt-1">
+            <span>{hoveredSegment.value} messages</span>
+            <span className="ml-2 text-gray-300">
+              ({hoveredSegment.percentage.toFixed(1)}% of total)
+            </span>
+          </div>
+          <div className="absolute bottom-0 left-4 w-3 h-3 bg-gray-900 transform rotate-45 translate-y-1/2"></div>
         </div>
       )}
     </div>

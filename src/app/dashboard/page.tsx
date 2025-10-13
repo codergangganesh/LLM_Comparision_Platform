@@ -23,7 +23,15 @@ import {
   Brain,
   Activity,
   Sparkles,
-  Download
+  Download,
+  Bell,
+  Filter,
+  Calendar,
+  Clock,
+  MessageSquare,
+  Database,
+  RefreshCw,
+  Pause
 } from 'lucide-react'
 import SimpleProfileIcon from '@/components/layout/SimpleProfileIcon'
 import NotificationBell from '@/components/ui/NotificationBell'
@@ -43,7 +51,8 @@ export default function DashboardPage() {
   const { darkMode } = useDarkMode()
   const { setPageLoading } = useOptimizedLoading()
   const supabase = createClient()
-  const realtimeSubscriptionRef = useRef<ReturnType<typeof supabase.channel> | null>(null)
+  const realtimeSubscriptionRef = useRef<any>(null)
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null)
   
   const [metrics, setMetrics] = useState<MetricCard[]>([
     {
@@ -93,6 +102,10 @@ export default function DashboardPage() {
   const [selectedModels, setSelectedModels] = useState<string[]>([])
   const [availableModels, setAvailableModels] = useState<any[]>([])
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
+  const [autoRefresh, setAutoRefresh] = useState(true)
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [hasUsedModels, setHasUsedModels] = useState(false)
   
   const [responseTimeData, setResponseTimeData] = useState<{name: string; value: number; color: string}[]>([])
   const [messagesTypedData, setMessagesTypedData] = useState<{name: string; value: number; color: string}[]>([])
@@ -124,90 +137,107 @@ export default function DashboardPage() {
     setAvailableModels(AI_MODELS)
   }, [])
 
-  // Filter sessions based on selected models
-  const filterSessionsByModels = (sessions: ChatSession[], models: string[]): ChatSession[] => {
-    if (models.length === 0) return sessions
-    return sessions.filter(session => 
+  // Filter sessions based on selected models and time range
+  const filterSessions = (sessions: ChatSession[], models: string[], range: '7d' | '30d' | '90d'): ChatSession[] => {
+    // First filter by models
+    let filteredSessions = models.length === 0 ? sessions : sessions.filter(session => 
       session.selectedModels?.some(model => models.includes(model))
     )
+    
+    // Then filter by time range
+    filteredSessions = dashboardService.filterSessionsByDateRange(filteredSessions, 
+      range === '7d' ? 7 : range === '30d' ? 30 : 90)
+    
+    return filteredSessions
   }
 
   // Function to update dashboard data
-  const updateDashboardData = async (fetchedSessions: ChatSession[]) => {
-    if (fetchedSessions) {
-      // Filter sessions based on selected models
-      const filteredSessions = filterSessionsByModels(fetchedSessions, selectedModels)
-      setSessions(filteredSessions)
+  const updateDashboardData = async (fetchedSessions: ChatSession[] | null = null) => {
+    setIsRefreshing(true)
+    
+    try {
+      // If no sessions provided, fetch them
+      const sessionsToUse = fetchedSessions || await dashboardService.getChatSessions(false)
       
-      // Calculate metrics - use cumulative values for cards
-      dashboardService.calculateDashboardMetrics(fetchedSessions)
-      
-      // Preserve cumulative metrics for display in cards
-      // This ensures that even when sessions are deleted, the numerical cards retain their values
-      const cumulativeMetrics = dashboardService.getCumulativeMetrics()
-      setMetrics([
-        {
-          title: 'Total Comparisons',
-          value: cumulativeMetrics.totalComparisons.toString(),
-          change: '+12.5%',
-          trend: 'up',
-          icon: GitCompare,
-          color: 'blue'
-        },
-        {
-          title: 'Models Analyzed',
-          value: cumulativeMetrics.modelsAnalyzed.toString(),
-          change: '+8.2%',
-          trend: 'up',
-          icon: Brain,
-          color: 'purple'
-        },
-        {
-          title: 'Accuracy Score',
-          value: `${cumulativeMetrics.accuracyScore}%`,
-          change: '+2.1%',
-          trend: 'up',
-          icon: TrendingUp,
-          color: 'green'
-        },
-        {
-          title: 'API Usage',
-          value: `${cumulativeMetrics.apiUsage}%`,
-          change: '-5.4%',
-          trend: 'down',
-          icon: Activity,
-          color: 'orange'
-        }
-      ])
-      
-      // Calculate usage data - use cumulative values for cards
-      dashboardService.getUsageData(fetchedSessions)
-      const usage = dashboardService.getUsageData(filteredSessions)
-      
-      // Preserve cumulative usage data for display in cards
-      // This ensures that even when sessions are deleted, the numerical cards retain their values
-      const cumulativeUsage = dashboardService.getCumulativeUsageData()
-      setUsageData(cumulativeUsage)
-      
-      // For charts, use current session data (will show empty when sessions are deleted)
-      // Charts should reflect current state, not cumulative data
-      setResponseTimeData(dashboardService.getResponseTimeData(filteredSessions))
-      setMessagesTypedData(dashboardService.getMessagesTypedData(filteredSessions))
-      setModelDataTimeData(dashboardService.getModelDataTimeData(filteredSessions))
-      setResponseTimeDistributionData(dashboardService.getResponseTimeDistributionData(filteredSessions))
-      
-      // Calculate line chart data
-      const lineData = dashboardService.getLineChartData(filteredSessions)
-      setLineChartData(lineData)
-      
-      const metricsList = dashboardService.getLineChartMetrics(filteredSessions)
-      setLineChartMetrics(metricsList)
-      
-      const metricLabels: Record<string, string> = {}
-      metricsList.forEach(metric => {
-        metricLabels[metric] = metric
-      })
-      setLineChartMetricLabels(metricLabels)
+      if (sessionsToUse) {
+        // Check if user has used models
+        const hasSessions = sessionsToUse.length > 0
+        setHasUsedModels(hasSessions)
+        
+        // Filter sessions based on selected models and time range
+        const filteredSessions = filterSessions(sessionsToUse, selectedModels, timeRange)
+        setSessions(filteredSessions)
+        
+        // Calculate metrics based on actual session data
+        const dashboardMetrics = dashboardService.calculateDashboardMetrics(filteredSessions)
+        
+        // Update metrics with actual values
+        setMetrics([
+          {
+            title: 'Total Comparisons',
+            value: dashboardMetrics.totalComparisons.toString(),
+            change: dashboardMetrics.totalComparisons > 0 ? '+12.5%' : '+0%',
+            trend: 'up',
+            icon: GitCompare,
+            color: 'blue'
+          },
+          {
+            title: 'Models Analyzed',
+            value: dashboardMetrics.modelsAnalyzed.toString(),
+            change: dashboardMetrics.modelsAnalyzed > 0 ? '+8.2%' : '+0%',
+            trend: 'up',
+            icon: Brain,
+            color: 'purple'
+          },
+          {
+            title: 'Accuracy Score',
+            value: `${dashboardMetrics.accuracyScore}%`,
+            change: dashboardMetrics.accuracyScore > 0 ? '+2.1%' : '+0%',
+            trend: 'up',
+            icon: TrendingUp,
+            color: 'green'
+          },
+          {
+            title: 'API Usage',
+            value: `${dashboardMetrics.apiUsage}%`,
+            change: dashboardMetrics.apiUsage > 0 ? '-5.4%' : '-0%',
+            trend: dashboardMetrics.apiUsage > 50 ? 'down' : 'up',
+            icon: Activity,
+            color: 'orange'
+          }
+        ])
+        
+        // Calculate usage data
+        const usage = dashboardService.getUsageData(filteredSessions)
+        setUsageData(usage)
+        
+        // Update charts with actual data
+        setResponseTimeData(dashboardService.getResponseTimeData(filteredSessions))
+        setMessagesTypedData(dashboardService.getMessagesTypedData(filteredSessions))
+        setModelDataTimeData(dashboardService.getModelDataTimeData(filteredSessions))
+        setResponseTimeDistributionData(dashboardService.getResponseTimeDistributionData(filteredSessions))
+        
+        // Calculate line chart data
+        const lineData = dashboardService.getLineChartData(filteredSessions)
+        setLineChartData(lineData)
+        
+        const metricsList = dashboardService.getLineChartMetrics(filteredSessions)
+        setLineChartMetrics(metricsList)
+        
+        const metricLabels: Record<string, string> = {}
+        metricsList.forEach(metric => {
+          metricLabels[metric] = metric
+        })
+        setLineChartMetricLabels(metricLabels)
+        
+        // Update last updated time
+        setLastUpdated(new Date())
+      }
+    } catch (error) {
+      console.error('Error updating dashboard data:', error)
+    } finally {
+      setIsRefreshing(false)
+      setLoadingData(false)
     }
   }
 
@@ -229,7 +259,7 @@ export default function DashboardPage() {
     }
     
     fetchData()
-  }, [user, loading, selectedModels])
+  }, [user, loading])
 
   // Set up real-time subscription for chat sessions
   useEffect(() => {
@@ -281,8 +311,6 @@ export default function DashboardPage() {
         async (payload) => {
           console.log('Chat session deleted:', payload.old)
           // Clear cache and fetch updated data
-          // IMPORTANT: When sessions are deleted, we want to preserve cumulative metrics
-          // but update the charts to show "No data available"
           dashboardService.clearCache()
           const fetchedSessions = await chatHistoryService.getChatSessions(false)
           await updateDashboardData(fetchedSessions || [])
@@ -298,8 +326,50 @@ export default function DashboardPage() {
         supabase.removeChannel(realtimeSubscriptionRef.current)
       }
     }
-  }, [user, loading, supabase])
+  }, [user, loading])
 
+  // Set up auto-refresh interval
+  useEffect(() => {
+    if (autoRefresh) {
+      refreshIntervalRef.current = setInterval(async () => {
+        if (!user || loading) return
+        dashboardService.clearCache()
+        const fetchedSessions = await dashboardService.getChatSessions(false)
+        await updateDashboardData(fetchedSessions || [])
+      }, 30000) // Refresh every 30 seconds
+    } else {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current)
+        refreshIntervalRef.current = null
+      }
+    }
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current)
+      }
+    }
+  }, [autoRefresh, user, loading, selectedModels, timeRange])
+
+  // Handle filter changes
+  useEffect(() => {
+    if (!user || loading) return
+    
+    const updateFilteredData = async () => {
+      setLoadingData(true)
+      try {
+        const fetchedSessions = await dashboardService.getChatSessions(false)
+        await updateDashboardData(fetchedSessions || [])
+      } catch (error) {
+        console.error('Error updating filtered data:', error)
+      } finally {
+        setLoadingData(false)
+      }
+    }
+    
+    updateFilteredData()
+  }, [selectedModels, timeRange, user, loading])
+  
   // Show loading while checking auth status
   if (loading || loadingData) {
     return <OptimizedPageTransitionLoader message="Loading dashboard..." />
@@ -459,6 +529,24 @@ export default function DashboardPage() {
     setSelectedModels([])
   }
 
+  // Toggle auto-refresh
+  const toggleAutoRefresh = () => {
+    setAutoRefresh(!autoRefresh)
+  }
+
+  // Manual refresh
+  const handleManualRefresh = async () => {
+    if (isRefreshing) return
+    dashboardService.clearCache()
+    const fetchedSessions = await dashboardService.getChatSessions(false)
+    await updateDashboardData(fetchedSessions || [])
+  }
+
+  // Get formatted last updated time
+  const getFormattedLastUpdated = () => {
+    return lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  }
+
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
       darkMode 
@@ -488,6 +576,13 @@ export default function DashboardPage() {
                 }`}>
                   Welcome back! Here&#39;s your AI platform overview.
                 </p>
+                {!hasUsedModels && (
+                  <p className={`mt-2 text-sm transition-colors duration-200 ${
+                    darkMode ? 'text-gray-400' : 'text-slate-500'
+                  }`}>
+                    Start using AI models to see dashboard metrics and analytics
+                  </p>
+                )}
               </div>
               
               <div className="flex items-center space-x-3">
@@ -496,6 +591,47 @@ export default function DashboardPage() {
                 
                 {/* Simple Profile Icon */}
                 <SimpleProfileIcon />
+                
+                {/* Auto-refresh toggle */}
+                <button 
+                  onClick={toggleAutoRefresh}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-200 shadow-sm ${
+                    autoRefresh 
+                      ? darkMode 
+                        ? 'bg-green-900/30 text-green-400 border border-green-700/30' 
+                        : 'bg-green-100 text-green-700 border border-green-200'
+                      : darkMode 
+                        ? 'bg-gray-700 text-gray-300 border border-gray-600' 
+                        : 'bg-gray-100 text-gray-700 border border-gray-300'
+                  }`}
+                  title={autoRefresh ? "Disable auto-refresh" : "Enable auto-refresh"}
+                >
+                  {autoRefresh ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Pause className="w-4 h-4" />
+                  )}
+                  <span className="text-sm font-medium hidden md:inline">
+                    {autoRefresh ? "Auto" : "Paused"}
+                  </span>
+                </button>
+                
+                {/* Manual refresh */}
+                <button 
+                  onClick={handleManualRefresh}
+                  disabled={isRefreshing}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-xl transition-all duration-200 shadow-sm ${
+                    darkMode 
+                      ? 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600' 
+                      : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border border-gray-300'
+                  }`}
+                  title="Refresh dashboard"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span className="text-sm font-medium hidden md:inline">
+                    Refresh
+                  </span>
+                </button>
                 
                {/* Time Range Selector */}
 <div className="relative">
@@ -531,7 +667,7 @@ export default function DashboardPage() {
                     }`}
                   >
                     <Filter className="w-4 h-4" />
-                    <span className="font-medium"></span>
+                    <span className="font-medium">Filter</span>
                   </button>
                   
                   {/* Dropdown menu for model filtering */}
@@ -748,6 +884,23 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+            </div>
+            
+            {/* Last updated info */}
+            <div className={`mt-2 text-xs flex items-center ${
+              darkMode ? 'text-gray-400' : 'text-gray-500'
+            }`}>
+              <RefreshCw className="w-3 h-3 mr-1" />
+              <span>Last updated: {getFormattedLastUpdated()}</span>
+              {autoRefresh && (
+                <span className="ml-2 flex items-center">
+                  <span className="flex h-2 w-2 mr-1">
+                    <span className="animate-ping absolute h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative h-2 w-2 rounded-full bg-green-500"></span>
+                  </span>
+                  Auto-refreshing
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -999,12 +1152,18 @@ export default function DashboardPage() {
   )
 }
 
+// Helper function to get color classes for metrics
 const getMetricColorClasses = (color: string) => {
-  const colors = {
-    blue: 'from-blue-500 to-blue-600 text-white',
-    purple: 'from-purple-500 to-purple-600 text-white',
-    green: 'from-green-500 to-green-600 text-white',
-    orange: 'from-orange-500 to-orange-600 text-white'
+  switch (color) {
+    case 'blue':
+      return 'from-blue-500 to-blue-600 text-white'
+    case 'purple':
+      return 'from-purple-500 to-purple-600 text-white'
+    case 'green':
+      return 'from-green-500 to-green-600 text-white'
+    case 'orange':
+      return 'from-orange-500 to-orange-600 text-white'
+    default:
+      return 'from-gray-500 to-gray-600 text-white'
   }
-  return colors[color as keyof typeof colors] || colors.blue
 }

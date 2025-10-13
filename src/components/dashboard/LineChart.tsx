@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { dashboardService } from '@/services/dashboard.service'
 import { AI_MODELS } from '@/config/ai-models'
 import { TrendingUp } from 'lucide-react'
@@ -37,8 +37,23 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
     return lastValue - firstValue
   }
   
+  const [hoveredPoint, setHoveredPoint] = useState<{ 
+    period: string; 
+    values: { metric: string; value: number; color: string }[] 
+  } | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+  
+  const handlePointHover = (e: React.MouseEvent, period: string, values: { metric: string; value: number; color: string }[]) => {
+    setHoveredPoint({ period, values })
+    setTooltipPosition({ x: e.clientX, y: e.clientY })
+  }
+  
+  const handlePointLeave = () => {
+    setHoveredPoint(null)
+  }
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-300">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-300 relative">
       <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{title}</h3>
       {data.length > 0 && metrics.length > 0 ? (
         <div className="h-64">
@@ -112,6 +127,18 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
                       
                       const colorClass = getColorClass(color)
                       
+                      // Collect values for this point across all metrics
+                      const pointValues = metrics
+                        .filter(m => typeof point[m] === 'number')
+                        .map(m => {
+                          const modelForMetric = AI_MODELS.find(mod => mod.displayName === m);
+                          return {
+                            metric: m,
+                            value: point[m] as number,
+                            color: dashboardService.getModelColor(modelForMetric?.id || m)
+                          }
+                        })
+                      
                       return (
                         <React.Fragment key={index}>
                           {/* Line to next point */}
@@ -127,14 +154,17 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
                             ></div>
                           )}
                           
-                          {/* Point */}
+                          {/* Point with hover interaction */}
                           <div
-                            className={`absolute w-3 h-3 rounded-full ${colorClass} border-2 border-white dark:border-gray-800 shadow-sm`}
+                            className={`absolute w-4 h-4 rounded-full ${colorClass} border-2 border-white dark:border-gray-800 shadow-sm cursor-pointer hover:scale-125 transition-transform`}
                             style={{
                               left: `${x}%`,
                               top: `${y}%`,
                               transform: 'translate(-50%, -50%)'
                             }}
+                            onMouseEnter={(e) => handlePointHover(e, point.period as string, pointValues)}
+                            onMouseMove={(e) => setTooltipPosition({ x: e.clientX, y: e.clientY })}
+                            onMouseLeave={handlePointLeave}
                           ></div>
                         </React.Fragment>
                       )
@@ -213,6 +243,33 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
             </svg>
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-center">No data available<br/><span className="text-sm">History has been cleared</span></p>
+        </div>
+      )}
+      
+      {/* Tooltip */}
+      {hoveredPoint && (
+        <div 
+          className="fixed z-50 bg-gray-900 text-white text-xs rounded py-2 px-3 shadow-lg pointer-events-none"
+          style={{
+            left: tooltipPosition.x + 10,
+            top: tooltipPosition.y - 10,
+            transform: 'translateY(-100%)'
+          }}
+        >
+          <div className="font-medium mb-1">{hoveredPoint.period}</div>
+          <div className="space-y-1">
+            {hoveredPoint.values.map((item, index) => (
+              <div key={index} className="flex items-center">
+                <div 
+                  className="w-2 h-2 rounded-full mr-2" 
+                  style={{ backgroundColor: item.color }}
+                ></div>
+                <span className="mr-2">{metricLabels[item.metric] || item.metric}:</span>
+                <span className="font-medium">{item.value.toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+          <div className="absolute bottom-0 left-4 w-3 h-3 bg-gray-900 transform rotate-45 translate-y-1/2"></div>
         </div>
       )}
     </div>

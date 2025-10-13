@@ -1,7 +1,7 @@
 'use client'
 
-import React from 'react'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import React, { useState } from 'react'
+import { TrendingUp, TrendingDown, Info } from 'lucide-react'
 
 interface BarChartProps {
   data: { name: string; value: number; color: string }[]
@@ -16,8 +16,25 @@ const BarChart: React.FC<BarChartProps> = ({ data, title, unit = '' }) => {
   // Calculate average value for comparison
   const averageValue = data.length > 0 ? data.reduce((sum, item) => sum + item.value, 0) / data.length : 0
   
+  const [hoveredItem, setHoveredItem] = useState<{name: string, value: number, percentage: number} | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
+  
+  const handleMouseEnter = (e: React.MouseEvent, item: {name: string, value: number}) => {
+    const percentage = maxValue > 0 ? (item.value / maxValue) * 100 : 0
+    setHoveredItem({
+      name: item.name,
+      value: item.value,
+      percentage
+    })
+    setTooltipPosition({ x: e.clientX, y: e.clientY })
+  }
+  
+  const handleMouseLeave = () => {
+    setHoveredItem(null)
+  }
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-300">
+    <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-300 relative">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
         {data.length > 0 && (
@@ -37,12 +54,18 @@ const BarChart: React.FC<BarChartProps> = ({ data, title, unit = '' }) => {
             const isAboveAverage = diffFromAvg > 0
             
             return (
-              <div key={index} className="flex items-center">
+              <div 
+                key={index} 
+                className="flex items-center"
+                onMouseEnter={(e) => handleMouseEnter(e, item)}
+                onMouseMove={(e) => setTooltipPosition({ x: e.clientX, y: e.clientY })}
+                onMouseLeave={handleMouseLeave}
+              >
                 <div className="w-24 text-sm text-gray-600 dark:text-gray-300 truncate">{item.name}</div>
                 <div className="flex-1 ml-2">
                   <div className="flex items-center">
                     <div 
-                      className="h-6 rounded-md transition-all duration-500 ease-out" 
+                      className="h-6 rounded-md transition-all duration-500 ease-out cursor-pointer hover:opacity-90" 
                       style={{ 
                         width: `${maxValue > 0 ? (item.value / maxValue) * 100 : 0}%`,
                         backgroundColor: item.color
@@ -75,6 +98,27 @@ const BarChart: React.FC<BarChartProps> = ({ data, title, unit = '' }) => {
             </svg>
           </div>
           <p className="text-gray-500 dark:text-gray-400 text-center">No data available<br/><span className="text-sm">History has been cleared</span></p>
+        </div>
+      )}
+      
+      {/* Tooltip */}
+      {hoveredItem && (
+        <div 
+          className="fixed z-50 bg-gray-900 text-white text-xs rounded py-2 px-3 shadow-lg pointer-events-none"
+          style={{
+            left: tooltipPosition.x + 10,
+            top: tooltipPosition.y - 10,
+            transform: 'translateY(-100%)'
+          }}
+        >
+          <div className="font-medium">{hoveredItem.name}</div>
+          <div className="flex items-center mt-1">
+            <span>{hoveredItem.value}{unit}</span>
+            <span className="ml-2 text-gray-300">
+              ({hoveredItem.percentage.toFixed(1)}% of max)
+            </span>
+          </div>
+          <div className="absolute bottom-0 left-4 w-3 h-3 bg-gray-900 transform rotate-45 translate-y-1/2"></div>
         </div>
       )}
     </div>
