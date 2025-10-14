@@ -2,13 +2,30 @@
 
 import React from 'react'
 import Link from 'next/link'
-import { ChevronRight, Brain } from 'lucide-react'
+import { ChevronRight, Brain, Twitter, Linkedin, Facebook, Github } from 'lucide-react'
 
 interface SiteFooterProps {
   darkMode: boolean
+  socialLinks?: {
+    twitter?: string
+    linkedin?: string
+    facebook?: string
+    github?: string
+  }
 }
 
-export default function SiteFooter({ darkMode }: SiteFooterProps) {
+export default function SiteFooter({ darkMode, socialLinks }: SiteFooterProps) {
+  // Default social media links
+  const defaultSocialLinks = [
+    { name: 'Twitter', url: socialLinks?.twitter || 'https://twitter.com/codergangganesh', icon: Twitter },
+    { name: 'LinkedIn', url: socialLinks?.linkedin || 'https://linkedin.com/in/codergangganesh', icon: Linkedin },
+    { name: 'Facebook', url: socialLinks?.facebook || 'https://facebook.com/codergangganesh', icon: Facebook },
+    { name: 'GitHub', url: socialLinks?.github || 'https://github.com/codergangganesh', icon: Github }
+  ]
+
+  // Filter out social links that don't have URLs
+  const validSocialLinks = defaultSocialLinks.filter(link => link.url)
+
   return (
     <footer className={`relative overflow-hidden ${
       darkMode
@@ -80,7 +97,7 @@ export default function SiteFooter({ darkMode }: SiteFooterProps) {
                 {[
                   { name: 'Compare Models', href: '/chat' },
                   { name: 'View Comparisons', href: '/dashboard' },
-                  { name: 'Docs', href: '/docs' }
+                 
                 ].map((link, index) => (
                   <li key={index}>
                     <Link
@@ -117,11 +134,10 @@ export default function SiteFooter({ darkMode }: SiteFooterProps) {
                 ].map((model, index) => (
                   <li key={index}>
                     <Link
-                      href="/compare"
+                      href="/chat"
                       className={`hover:text-white transition-colors duration-200 text-sm flex items-center space-x-2 group ${
                         darkMode ? 'text-gray-400' : 'text-slate-400'
-                      }`}
-                    >
+                      }`}>
                       <div className={`w-2 h-2 rounded-full group-hover:bg-blue-300 transition-colors duration-200 ${
                         darkMode ? 'bg-blue-400' : 'bg-blue-400'
                       }`}></div>
@@ -132,20 +148,30 @@ export default function SiteFooter({ darkMode }: SiteFooterProps) {
               </ul>
             </div>
 
-            {/* Contact Details removed */}
+            {/* Social Links */}
             <div>
               <h4 className={`font-bold mb-4 ${darkMode ? 'text-white' : 'text-white'}`}>
                 Connect
               </h4>
-              <ul className="space-y-2">
-                <li>
-                  <Link
-                    href="mailto:mannamganeshbabu8@gmail.com.com"
-                    className={`hover:text-white transition-colors duration-200 text-sm flex items-center space-x-2 ${darkMode ? 'text-gray-400' : 'text-slate-400'}`}>
-                    <ChevronRight className="w-3 h-3" />
-                    <span>E-mail</span>
-                  </Link>
-                </li>
+              <ul className="space-y-3">
+                {validSocialLinks.map((social, index) => {
+                  const Icon = social.icon
+                  return (
+                    <li key={index}>
+                      <Link
+                        href={social.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`hover:text-white transition-colors duration-200 text-sm flex items-center space-x-3 ${
+                          darkMode ? 'text-gray-400' : 'text-slate-400'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{social.name}</span>
+                      </Link>
+                    </li>
+                  )
+                })}
               </ul>
             </div>
 

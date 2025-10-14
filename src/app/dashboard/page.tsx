@@ -478,7 +478,10 @@ export default function DashboardPage() {
                 <p className={`mt-1 transition-colors duration-200 ${
                   darkMode ? 'text-gray-300' : 'text-slate-600'
                 }`}>
-                  Welcome back, <span className="font-semibold">{user?.id}</span> — {user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')}!
+                  Welcome back, <span className="font-semibold">
+                    {user?.user_metadata?.full_name || 
+                     (user?.email ? user.email.split('@')[0] : 'User')}
+                  </span>!
                 </p>
                 {!hasUsedModels && (
                   <p className={`mt-2 text-sm transition-colors duration-200 ${

@@ -102,10 +102,22 @@ export default function LandingPage() {
   };
 
   const handleGoToChat = () => {
-    router.push('/chat');
+    if (user) {
+      router.push('/chat');
+    } else {
+      router.push('/auth');
+    }
   };
 
   const profilePicture = getProfilePicture();
+
+  // Extract social media links from user profile
+  const socialLinks = {
+    twitter: 'https://twitter.com/codergangganesh',
+    linkedin: 'https://linkedin.com/in/codergangganesh',
+    facebook: 'https://facebook.com/codergangganesh',
+    github: 'https://github.com/codergangganesh'
+  }
 
   return (
     <div className={`min-h-screen transition-all duration-700 ease-in-out ${darkMode
@@ -418,46 +430,46 @@ export default function LandingPage() {
                 <React.Fragment key={loopIndex}>
                   {[
                     {
-                      name: "Dr. Sarah Chen",
+                      name: "Priya Sharma",
                       role: "AI Researcher",
-                      company: "Stanford University",
-                      avatar: "SC",
+                      company: "IIT Delhi",
+                      avatar: "PS",
                       rating: 5,
                       text: "AI Fiesta has revolutionized how I compare model outputs for my research. The side-by-side comparison saves me hours every day.",
                       gradient: "from-blue-500 to-purple-500"
                     },
                     {
-                      name: "Marcus Rodriguez",
+                      name: "Rahul Verma",
                       role: "Senior Developer",
-                      company: "TechCorp",
-                      avatar: "MR",
+                      company: "TCS",
+                      avatar: "RV",
                       rating: 5,
                       text: "The universal input feature is a game-changer. I can test prompts across multiple models instantly and find the best responses.",
                       gradient: "from-green-500 to-blue-500"
                     },
                     {
-                      name: "Emily Zhang",
+                      name: "Anjali Patel",
                       role: "Product Manager",
-                      company: "StartupAI",
-                      avatar: "EZ",
+                      company: "Infosys",
+                      avatar: "AP",
                       rating: 5,
                       text: "Perfect tool for evaluating AI models for our product. The history feature helps us track which models work best for different use cases.",
                       gradient: "from-pink-500 to-purple-500"
                     },
                     {
-                      name: "James Wilson",
+                      name: "Vikram Singh",
                       role: "Data Scientist",
-                      company: "DataTech Inc",
-                      avatar: "JW",
+                      company: "Wipro",
+                      avatar: "VS",
                       rating: 5,
                       text: "The analytics dashboard provides incredible insights into model performance. I can now make data-driven decisions about which models to use.",
                       gradient: "from-yellow-500 to-orange-500"
                     },
                     {
-                      name: "Priya Sharma",
+                      name: "Meera Reddy",
                       role: "ML Engineer",
-                      company: "AI Solutions",
-                      avatar: "PS",
+                      company: "Accenture",
+                      avatar: "MR",
                       rating: 5,
                       text: "As someone working with multiple AI models daily, AI Fiesta has become an indispensable tool in my workflow. Highly recommended!",
                       gradient: "from-indigo-500 to-blue-500"
