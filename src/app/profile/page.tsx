@@ -682,52 +682,27 @@ export default function ProfilePage() {
                             darkMode ? 'text-gray-300' : 'text-gray-700'
                           }`}>Nation / Country</label>
                           {isEditing ? (
-                            <div className="relative">
-                              <div className="relative">
-                                <input
-                                  type="text"
-                                  value={searchCountry || formData.country}
-                                  onChange={(e) => setSearchCountry(e.target.value)}
-                                  placeholder="Search country..."
-                                  className={`w-full px-3 py-2 pl-10 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
-                                    darkMode 
-                                      ? 'border border-gray-600 bg-gray-700 text-white' 
-                                      : 'border border-gray-300 bg-white text-gray-900'
-                                  }`}
-                                />
-                                <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
-                              </div>
-                              {searchCountry && (
-                                <div className={`absolute z-10 mt-1 w-full max-h-60 overflow-auto rounded-md shadow-lg ${
-                                  darkMode 
-                                    ? 'bg-gray-800 border border-gray-700' 
-                                    : 'bg-white border border-gray-200'
-                                }`}>
-                                  {filteredCountries.length > 0 ? (
-                                    filteredCountries.map((country) => (
-                                      <div
-                                        key={country}
-                                        className={`px-4 py-2 cursor-pointer hover:${
-                                          darkMode ? 'bg-gray-700' : 'bg-gray-100'
-                                        }`}
-                                        onClick={() => {
-                                          setFormData({ ...formData, country })
-                                          setSearchCountry('')
-                                        }}
-                                      >
-                                        <span className={
-                                          darkMode ? 'text-white' : 'text-gray-900'
-                                        }>{country}</span>
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <div className={
-                                      darkMode ? 'px-4 py-2 text-gray-400' : 'px-4 py-2 text-gray-500'
-                                    }>No countries found</div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
+                            <select
+                              name="country"
+                              value={formData.country}
+                              onChange={handleInputChange}
+                              className={`w-full px-3 py-2 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
+                                darkMode 
+                                  ? 'border border-gray-600 bg-gray-700 text-white' 
+                                  : 'border border-gray-300 bg-white text-gray-900'
+                              }`}
+                            >
+                              <option value="" disabled>Select a country</option>
+                              {countries.map((country) => (
+                                <option 
+                                  key={country} 
+                                  value={country}
+                                  className={darkMode ? 'bg-gray-700' : 'bg-white'}
+                                >
+                                  {country}
+                                </option>
+                              ))}
+                            </select>
                           ) : (
                             <p className={
                               darkMode ? 'text-white py-2' : 'text-gray-900 py-2'
