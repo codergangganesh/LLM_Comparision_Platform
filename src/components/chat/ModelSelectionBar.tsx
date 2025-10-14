@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { AI_MODELS } from '@/config/ai-models'
-import { Search, Filter, ChevronLeft, ChevronRight, Plus, Check, X, Info, Star, Code, Image, FileText, DollarSign, Clock, Zap, Brain } from 'lucide-react'
+import { Search, Filter, ChevronLeft, ChevronRight, Plus, Check, X, Info, Star, Code, Image, FileText, DollarSign, Clock } from 'lucide-react'
 
 interface ModelSelectionBarProps {
   selectedModels: string[]
@@ -275,7 +275,18 @@ export default function ModelSelectionBar({ selectedModels, onModelToggle, darkM
                       </p>
                       {/* Enhanced Model Details */}
                       <div className="flex items-center space-x-2 mt-1">
-                        {/* Speed and cost information removed as not available in current model data */}
+                        <div className="flex items-center space-x-1">
+                          <Clock className={`w-3 h-3 ${getSpeedColor(model.speed || 'medium')}`} />
+                          <span className={`text-xs font-medium ${getSpeedColor(model.speed || 'medium')}`}>
+                            {model.speed || 'Medium'}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-1">
+                          <DollarSign className={`w-3 h-3 ${getCostColor(model.cost || 'medium')}`} />
+                          <span className={`text-xs font-medium ${getCostColor(model.cost || 'medium')}`}>
+                            {model.cost || 'Medium'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
@@ -328,7 +339,22 @@ export default function ModelSelectionBar({ selectedModels, onModelToggle, darkM
                             <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Provider:</span>
                             <span>{model.provider}</span>
                           </div>
-                          {/* Context window information removed as not available in current model data */}
+                          <div className="flex justify-between">
+                            <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Speed:</span>
+                            <span className={getSpeedColor(model.speed || 'medium')}>
+                              {model.speed || 'Medium'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Cost:</span>
+                            <span className={getCostColor(model.cost || 'medium')}>
+                              {model.cost || 'Medium'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className={darkMode ? 'text-gray-400' : 'text-gray-500'}>Context:</span>
+                            <span>{model.contextWindow || '32K tokens'}</span>
+                          </div>
                           
                           {/* Capabilities */}
                           {model.capabilities && model.capabilities.length > 0 && (

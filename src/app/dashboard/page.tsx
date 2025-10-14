@@ -26,7 +26,9 @@ import {
   Download,
   Bell,
   MessageSquare,
-  Database
+  Database,
+  Filter,
+  Calendar
 } from 'lucide-react'
 import SimpleProfileIcon from '@/components/layout/SimpleProfileIcon'
 import NotificationBell from '@/components/ui/NotificationBell'
@@ -94,6 +96,9 @@ export default function DashboardPage() {
   const [isExportOpen, setIsExportOpen] = useState(false)
   const [availableModels, setAvailableModels] = useState<any[]>([])
   const [hasUsedModels, setHasUsedModels] = useState(false)
+  const [isFilterOpen, setIsFilterOpen] = useState(false)
+  const [selectedModels, setSelectedModels] = useState<string[]>([])
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
   
   const [responseTimeData, setResponseTimeData] = useState<{name: string; value: number; color: string}[]>([])
   const [messagesTypedData, setMessagesTypedData] = useState<{name: string; value: number; color: string}[]>([])
@@ -125,10 +130,23 @@ export default function DashboardPage() {
     setAvailableModels(AI_MODELS)
   }, [])
 
-  // Filter sessions (removed filtering by models)
-  const filterSessions = (sessions: ChatSession[]): ChatSession[] => {
-    // Return all sessions without filtering
-    return sessions
+  // Filter sessions by selected models and time range
+  const filterSessions = (sessionsToFilter: ChatSession[]): ChatSession[] => {
+    let result = sessionsToFilter
+    // Time range filter
+    const days = timeRange === '7d' ? 7 : timeRange === '90d' ? 90 : 30
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+    result = result.filter(s => {
+      const d = new Date(s.timestamp)
+      return d >= startDate && d <= endDate
+    })
+    // Models filter
+    if (selectedModels.length > 0) {
+      result = result.filter(s => (s.selectedModels || []).some(m => selectedModels.includes(m)))
+    }
+    return result
   }
 
   // Function to update dashboard data
@@ -142,7 +160,7 @@ export default function DashboardPage() {
         const hasSessions = sessionsToUse.length > 0
         setHasUsedModels(hasSessions)
         
-        // Use all sessions without filtering
+        // Apply filters
         const filteredSessions = filterSessions(sessionsToUse)
         setSessions(filteredSessions)
         
@@ -234,6 +252,16 @@ export default function DashboardPage() {
     
     fetchData()
   }, [user, loading])
+
+  // Re-compute when filters change
+  useEffect(() => {
+    const recompute = async () => {
+      if (!user || loading) return
+      const fetchedSessions = await chatHistoryService.getChatSessions()
+      await updateDashboardData(fetchedSessions || [])
+    }
+    recompute()
+  }, [selectedModels, timeRange])
 
   // Set up real-time subscription for chat sessions
   useEffect(() => {
@@ -486,6 +514,125 @@ export default function DashboardPage() {
                 
                 {/* Simple Profile Icon */}
                 <SimpleProfileIcon />
+
+                {/* Time Range Selector */}
+                <div className="relative">
+                  <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 shadow-sm ${
+                    darkMode
+                      ? 'bg-gradient-to-r from-gray-800 to-gray-900 text-white border border-gray-700'
+                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300'
+                  }`}>
+                    <Calendar className={`w-4 h-4 ${darkMode ? 'text-white' : 'text-gray-800'}`} />
+                    <select
+                      value={timeRange}
+                      onChange={(e) => setTimeRange(e.target.value as '7d' | '30d' | '90d')}
+                      aria-label="Select time range"
+                      className={`bg-transparent text-sm font-medium focus:outline-none ${
+                        darkMode ? 'text-white' : 'text-gray-800'
+                      }`}
+                    >
+                      <option value="7d">Last 7 days</option>
+                      <option value="30d">Last 30 days</option>
+                      <option value="90d">Last 90 days</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Filter Dropdown */}
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsFilterOpen(!isFilterOpen)}
+                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md ${
+                      darkMode 
+                        ? 'bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white border border-gray-600' 
+                        : 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 border border-gray-300' 
+                    }`}
+                  >
+                    <Filter className="w-4 h-4" />
+                    <span className="font-medium">Filter</span>
+                  </button>
+                  {isFilterOpen && (
+                    <div 
+                      className={`absolute right-0 w-80 rounded-xl shadow-xl z-20 overflow-hidden transform transition-all duration-200 ease-in-out mt-2 ${
+                        darkMode 
+                          ? 'bg-gray-800/95 border border-gray-700 backdrop-blur-xl' 
+                          : 'bg-white/95 border border-slate-200 backdrop-blur-xl'
+                      }`}
+                    >
+                      <div className="py-3">
+                        <div className={`px-4 py-3 border-b ${
+                          darkMode ? 'border-gray-700' : 'border-slate-200'
+                        }`}>
+                          <div className="flex justify-between items-center">
+                            <h3 className={`text-sm font-semibold ${
+                              darkMode ? 'text-gray-200' : 'text-slate-800'
+                            }`}>
+                              Filter by Models
+                            </h3>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => setSelectedModels(availableModels.map((m: any) => m.id))}
+                                className={`text-xs px-2 py-1 rounded ${
+                                  darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                              >
+                                Select All
+                              </button>
+                              <button
+                                onClick={() => setSelectedModels([])}
+                                className={`text-xs px-2 py-1 rounded ${
+                                  darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                }`}
+                              >
+                                Clear
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="max-h-60 overflow-y-auto">
+                          {availableModels.map((model: any) => (
+                            <div
+                              key={model.id}
+                              className={`px-4 py-2 flex items-center justify-between cursor-pointer transition-colors ${
+                                darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-slate-100'
+                              } ${
+                                selectedModels.includes(model.id)
+                                  ? darkMode ? 'bg-blue-900/30' : 'bg-blue-100'
+                                  : ''
+                              }`}
+                              onClick={() => {
+                                setSelectedModels(prev => prev.includes(model.id) ? prev.filter(id => id !== model.id) : [...prev, model.id])
+                              }}
+                            >
+                              <div className="flex items-center space-x-3">
+                                <div className={`w-3 h-3 rounded-full ${
+                                  selectedModels.includes(model.id) ? 'bg-blue-500' : (darkMode ? 'bg-gray-500' : 'bg-gray-400')
+                                }`}></div>
+                                <span className={`text-sm ${
+                                  darkMode
+                                    ? selectedModels.includes(model.id) ? 'text-white font-medium' : 'text-gray-300'
+                                    : selectedModels.includes(model.id) ? 'text-gray-900 font-medium' : 'text-gray-700'
+                                }`}>
+                                  {model.displayName || model.label || model.id}
+                                </span>
+                              </div>
+                              <span className={`text-xs px-2 py-1 rounded ${
+                                darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-600'
+                              }`}>
+                                {model.provider || 'model'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className={`px-4 py-3 border-t ${darkMode ? 'border-gray-700' : 'border-slate-200'}`}>
+                          <div className="text-xs text-center">
+                            {selectedModels.length > 0 ? `${selectedModels.length} selected` : 'No models selected (showing all)'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 
                 {/* Export Dropdown - Modern Design */}
                 <div className="relative">

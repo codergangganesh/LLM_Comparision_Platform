@@ -320,15 +320,15 @@ export default function AIResponseCard({
               )}
               
               {/* Response Content with Adaptive Container */}
-              <div className="relative flex-1 flex flex-col min-h-0">
+              <div className="relative">
                 <div 
                   ref={scrollRef}
-                  className={`overflow-y-auto response-scroll flex-1 ${
+                  className={`overflow-y-auto response-scroll ${
                     darkMode ? 'bg-gray-700/30' : 'bg-slate-50/30'
                   } rounded-xl p-4 border ${
                     darkMode ? 'border-gray-600/30' : 'border-slate-200/30'
                   } transition-all duration-300 hover:border-gray-500/50 ${
-                    isExpanded ? 'max-h-none' : isLongContent ? 'max-h-48' : 'max-h-80'
+                    isExpanded ? 'max-h-96' : isLongContent ? 'max-h-48' : 'max-h-80'
                   }`}
                 >
                   <div className={`prose max-w-none leading-relaxed ${

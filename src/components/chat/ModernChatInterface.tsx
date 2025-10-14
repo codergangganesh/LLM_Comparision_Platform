@@ -1,23 +1,22 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { Send, Sparkles } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Send, Settings, Plus, MessageSquare, Sparkles, Brain, BarChart3, ChevronDown, User, LogOut, Cog, Clock, Trash2, CreditCard, Moon, Sun } from 'lucide-react'
 import { AVAILABLE_MODELS } from '@/lib/models'
 import { AIModel } from '@/types/app'
 import { ChatSession, ChatResponse } from '@/types/chat'
 import AIResponseCard from './AIResponseCard'
+import ModelSelector from './ModelSelector'
+import BlankComparisonPage from './BlankComparisonPage'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
 import { usePopup } from '@/contexts/PopupContext'
 import { chatHistoryService } from '@/services/chatHistory.service'
 import DeleteAccountPopup from '../layout/DeleteAccountPopup'
-import BlankComparisonPage from './BlankComparisonPage'
-import ChatSidebar from './sections/ChatSidebar'
-import ModelSelectorSection from './sections/ModelSelectorSection'
 
 interface ModernChatInterfaceProps {
-  initialConversation?: ChatSession | null
+  initialConversation?: any | null
 }
 
 export default function ModernChatInterface({ initialConversation }: ModernChatInterfaceProps) {
@@ -29,7 +28,7 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [loading, setLoading] = useState<string[]>([])
   const [selectedModels, setSelectedModels] = useState<string[]>(
-    AVAILABLE_MODELS.slice(0, 2).map(model => model.id)
+    AVAILABLE_MODELS.slice(0, 3).map(model => model.id)
   )
   const [showModelSelector, setShowModelSelector] = useState(false)
   const [showBlankPage, setShowBlankPage] = useState(false)
@@ -39,65 +38,14 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
   const profileDropdownRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Memoize suggested prompts to prevent unnecessary re-renders
-  const suggestedPrompts = useMemo(() => [
-    "Explain quantum computing in simple terms",
-    "Write a creative story about time travel",
-    "Compare the benefits of renewable energy sources",
-    "Create a business plan for a tech startup"
-  ], [])
-
-  // Memoize popular prompts to prevent unnecessary re-renders
-  const popularPrompts = useMemo(() => [
-    "How does machine learning work?",
-    "Write a business proposal for sustainable energy",
-    "Explain blockchain technology simply",
-    "Create a workout plan for beginners"
-  ], [])
-
-  // Memoize session cache to prevent unnecessary re-renders
-  const [sessionCache, setSessionCache] = useState<{[key: string]: ChatSession[]}>({})
-
-  // Memoize the loadChatSessions function to prevent recreation on every render
-  const loadChatSessions = useCallback(async () => {
-    // Check if we're in a fresh comparison state
-    const isFreshComparison = localStorage.getItem('freshComparison') === 'true'
-    if (isFreshComparison) {
-      // Clear the flag and initialize empty state
-      localStorage.removeItem('freshComparison')
-      setChatSessions([])
-      setCurrentSessionId(null)
-      return
-    }
-    
-    // First check memory cache for instant display
-    const cachedKey = `user_${user?.id}`
-    if (sessionCache[cachedKey]) {
-      const sessionsWithDates: ChatSession[] = sessionCache[cachedKey].map((session) => ({
-        ...session,
-        timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
-        selectedModels: session.selectedModels || []
-      }))
-      setChatSessions(sessionsWithDates)
-      
-      // Set the most recent session as the current session
-      if (sessionsWithDates.length > 0 && !currentSessionId) {
-        const mostRecentSession = sessionsWithDates.reduce((latest: ChatSession, session: ChatSession) => 
-          new Date(session.timestamp) > new Date(latest.timestamp) ? session : latest,
-          sessionsWithDates[0]
-        )
-        setCurrentSessionId(mostRecentSession.id)
-      }
-      return
-    }
-    
-    // If not in memory cache, try localStorage for faster retrieval
-    const savedSessions = localStorage.getItem('aiFiestaChatSessions')
-    if (savedSessions) {
-      try {
-        const parsedSessions = JSON.parse(savedSessions)
-        // Convert timestamp strings back to Date objects
-        const sessionsWithDates: ChatSession[] = parsedSessions.map((session: {id: string, message: string, responses: ChatResponse[], timestamp: string | Date, selectedModels?: string[], bestResponse?: string, responseTime?: number}) => ({
+  // Load chat sessions from API on component mount
+  useEffect(() => {
+    const loadChatSessions = async () => {
+      // Try to load from API
+      const apiSessions = await chatHistoryService.getChatSessions()
+      if (apiSessions && apiSessions.length > 0) {
+        // Ensure timestamp is properly converted to Date objects
+        const sessionsWithDates: ChatSession[] = apiSessions.map((session: any) => ({
           ...session,
           timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
           selectedModels: session.selectedModels || []
@@ -112,106 +60,79 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
           )
           setCurrentSessionId(mostRecentSession.id)
         }
-        
-        // Cache in memory for next time
-        setSessionCache(prev => ({
-          ...prev,
-          [cachedKey]: sessionsWithDates
-        }))
-        
         return
-      } catch (e) {
-        console.error('Failed to parse saved sessions:', e)
-      }
-    }
-    
-    // Only make API call if no local data available
-    const apiSessions = await chatHistoryService.getChatSessions()
-    if (apiSessions && apiSessions.length > 0) {
-      // Ensure timestamp is properly converted to Date objects
-      const sessionsWithDates: ChatSession[] = apiSessions.map((session: {id: string, message: string, responses: ChatResponse[], timestamp: string | Date, selectedModels?: string[], bestResponse?: string, responseTime?: number}) => ({
-        ...session,
-        timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
-        selectedModels: session.selectedModels || []
-      }))
-      setChatSessions(sessionsWithDates)
-      
-      // Set the most recent session as the current session
-      if (sessionsWithDates.length > 0 && !currentSessionId) {
-        const mostRecentSession = sessionsWithDates.reduce((latest: ChatSession, session: ChatSession) => 
-          new Date(session.timestamp) > new Date(latest.timestamp) ? session : latest,
-          sessionsWithDates[0]
-        )
-        setCurrentSessionId(mostRecentSession.id)
       }
       
-      // Cache in both memory and localStorage
-      setSessionCache(prev => ({
-        ...prev,
-        [cachedKey]: sessionsWithDates
-      }))
-      
-      // Save to localStorage for offline access
-      const sessionsToSave = sessionsWithDates.map(session => ({
-        ...session,
-        timestamp: session.timestamp.toISOString()
-      }))
-      localStorage.setItem('aiFiestaChatSessions', JSON.stringify(sessionsToSave))
-    }
-  }, [user?.id, sessionCache, currentSessionId])
-
-  // Load chat sessions from API on component mount
-  useEffect(() => {
-    loadChatSessions()
-  }, [loadChatSessions])
-
-  // Memoize the saveChatSessions function to prevent recreation on every render
-  const saveChatSessions = useCallback(async () => {
-    if (chatSessions.length > 0) {
-      // Save the most recent session to API
-      const mostRecentSession = chatSessions.reduce((latest: ChatSession, session: ChatSession) => 
-        new Date(session.timestamp) > new Date(latest.timestamp) ? session : latest,
-        chatSessions[0]
-      )
-      
-      console.log('Attempting to save session to database:', JSON.stringify(mostRecentSession, null, 2));
-      const saveResult = await chatHistoryService.saveChatSession(mostRecentSession)
-      console.log('Database save result:', saveResult);
-      
-      if (!saveResult) {
-        console.warn('Failed to save to database, data will only be available locally');
-      }
-    }
-    
-    // Also save to localStorage for offline access
-    if (chatSessions.length > 0) {
-      // When saving, convert Date objects to strings
-      const sessionsToSave = chatSessions.map(session => {
-        // Ensure timestamp is a Date object before calling toISOString
-        const timestamp = session.timestamp instanceof Date 
-          ? session.timestamp 
-          : new Date(session.timestamp);
+      // Fallback to localStorage if no API sessions
+      const savedSessions = localStorage.getItem('aiFiestaChatSessions')
+      if (savedSessions) {
+        try {
+          const parsedSessions = JSON.parse(savedSessions)
+          // Convert timestamp strings back to Date objects
+          const sessionsWithDates: ChatSession[] = parsedSessions.map((session: any) => ({
+            ...session,
+            timestamp: session.timestamp instanceof Date ? session.timestamp : new Date(session.timestamp),
+            selectedModels: session.selectedModels || []
+          }))
+          setChatSessions(sessionsWithDates)
           
-        return {
-          ...session,
-          timestamp: timestamp.toISOString(),
-          selectedModels: session.selectedModels
+          // Set the most recent session as the current session
+          if (sessionsWithDates.length > 0 && !currentSessionId) {
+            const mostRecentSession = sessionsWithDates.reduce((latest: ChatSession, session: ChatSession) => 
+              new Date(session.timestamp) > new Date(latest.timestamp) ? session : latest,
+              sessionsWithDates[0]
+            )
+            setCurrentSessionId(mostRecentSession.id)
+          }
+        } catch (e) {
+          console.error('Failed to parse saved sessions:', e)
         }
-      })
-      localStorage.setItem('aiFiestaChatSessions', JSON.stringify(sessionsToSave))
-      
-      // Update memory cache
-      setSessionCache(prev => ({
-        ...prev,
-        [`user_${user?.id}`]: chatSessions
-      }))
+      }
     }
-  }, [chatSessions, user?.id])
 
-  // Save chat sessions to API and cache whenever they change
+    loadChatSessions()
+  }, [])
+
+  // Save chat sessions to API whenever they change
   useEffect(() => {
+    const saveChatSessions = async () => {
+      if (chatSessions.length > 0) {
+        // Save the most recent session to API
+        const mostRecentSession = chatSessions.reduce((latest: ChatSession, session: ChatSession) => 
+          new Date(session.timestamp) > new Date(latest.timestamp) ? session : latest,
+          chatSessions[0]
+        )
+        
+        console.log('Attempting to save session to database:', JSON.stringify(mostRecentSession, null, 2));
+        const saveResult = await chatHistoryService.saveChatSession(mostRecentSession)
+        console.log('Database save result:', saveResult);
+        
+        if (!saveResult) {
+          console.warn('Failed to save to database, data will only be available locally');
+        }
+      }
+      
+      // Also save to localStorage for offline access
+      if (chatSessions.length > 0) {
+        // When saving, convert Date objects to strings
+        const sessionsToSave = chatSessions.map(session => {
+          // Ensure timestamp is a Date object before calling toISOString
+          const timestamp = session.timestamp instanceof Date 
+            ? session.timestamp 
+            : new Date(session.timestamp);
+            
+          return {
+            ...session,
+            timestamp: timestamp.toISOString(),
+            selectedModels: session.selectedModels
+          }
+        })
+        localStorage.setItem('aiFiestaChatSessions', JSON.stringify(sessionsToSave))
+      }
+    }
+
     saveChatSessions()
-  }, [saveChatSessions])
+  }, [chatSessions])
 
   useEffect(() => {
     // Auto-resize textarea
@@ -235,32 +156,27 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
     };
   }, []);
 
-  const handleNewChat = useCallback(() => {
+  const handleNewChat = () => {
     setShowBlankPage(true)
     setMessage('')
-  }, [])
+  }
 
-  const startNewComparison = useCallback((initialMessage?: string) => {
+  const startNewComparison = () => {
     setChatSessions([])
     setCurrentSessionId(null)
-    // Clear localStorage and set a flag for fresh session
     localStorage.removeItem('aiFiestaChatSessions')
-    localStorage.setItem('freshComparison', 'true')
     setShowBlankPage(false)
-    if (initialMessage) {
-      setMessage(initialMessage)
-    }
-  }, [])
+  }
 
-  const handleModelToggle = useCallback((modelId: string) => {
+  const handleModelToggle = (modelId: string) => {
     setSelectedModels(prev => 
       prev.includes(modelId)
         ? prev.filter(id => id !== modelId)
         : [...prev, modelId]
     )
-  }, [])
+  }
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!message.trim() || selectedModels.length === 0) return
@@ -307,23 +223,12 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
 
       const data = await response.json()
       
-      // Fix: Ensure we're accessing the correct data structure
-      const results = data.results || []
-      
-      // Process responses to match ChatResponse structure
-      const processedResponses: ChatResponse[] = results.map((result: {model: string, content: string, error?: string}) => ({
-        model: result.model,
-        content: result.content || '',
-        error: result.error,
-        success: !result.error
-      }))
-      
       // Update session with responses and response time
       setChatSessions(prev => prev.map(session => 
         session.id === newSessionId 
           ? { 
               ...session, 
-              responses: processedResponses,
+              responses: data.results,
               responseTime: data.responseTime || responseTime
             } 
           : session
@@ -356,16 +261,16 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
     } finally {
       setLoading([])
     }
-  }, [message, selectedModels])
+  }
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
-      handleSubmit(e as unknown as React.FormEvent)
+      handleSubmit(e as any)
     }
-  }, [handleSubmit])
+  }
 
-  const handleMarkBest = useCallback((modelId: string) => {
+  const handleMarkBest = (modelId: string) => {
     if (!currentSessionId) return
     
     setChatSessions(prev => prev.map(session => {
@@ -378,14 +283,14 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
       }
       return session
     }))
-  }, [currentSessionId])
+  }
 
-  const getModelById = useCallback((modelId: string) => {
+  const getModelById = (modelId: string) => {
     return AVAILABLE_MODELS.find(model => model.id === modelId)
-  }, [])
+  }
 
   // Add the delete account confirmation handler
-  const handleDeleteAccountConfirm = useCallback(async (password: string) => {
+  const handleDeleteAccountConfirm = async (password: string) => {
     setIsDeleting(true)
     try {
       // Here you would implement the actual account deletion logic
@@ -408,29 +313,7 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
       setIsDeleting(false)
       setShowDeletePopup(false)
     }
-  }, [signOut])
-
-  // Memoize the ChatSidebar component props to prevent unnecessary re-renders
-  const chatSidebarProps = useMemo(() => ({
-    darkMode,
-    showBlankPage,
-    setShowBlankPage,
-    showDeletePopup,
-    setShowDeletePopup,
-    isDeleting,
-    setIsDeleting,
-    user,
-    signOut
-  }), [darkMode, showBlankPage, showDeletePopup, isDeleting, user, signOut])
-
-  // Memoize the ModelSelectorSection component props to prevent unnecessary re-renders
-  const modelSelectorProps = useMemo(() => ({
-    darkMode,
-    showModelSelector,
-    setShowModelSelector,
-    selectedModels,
-    handleModelToggle
-  }), [darkMode, showModelSelector, selectedModels, handleModelToggle])
+  }
 
   return (
     <div className={`flex h-screen transition-colors duration-200 ${
@@ -438,11 +321,350 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
         ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900' 
         : 'bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50'
     }`}>
-      <ChatSidebar {...chatSidebarProps} />
+      {/* Left Sidebar */}
+      <div className={`w-80 backdrop-blur-xl border-r transition-colors duration-200 relative ${
+        darkMode 
+          ? 'bg-gray-800/80 border-gray-700' 
+          : 'bg-white/80 border-slate-200/50'
+      }`}>
+        {/* Sidebar Content Container */}
+        <div className="flex flex-col h-full pb-20"> {/* Added bottom padding for dropdown */}
+        {/* Header with Logo */}
+        <div className={`p-6 border-b transition-colors duration-200 ${
+          darkMode ? 'border-gray-700' : 'border-slate-200/30'
+        }`}>
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Brain className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className={`text-xl font-bold bg-gradient-to-r bg-clip-text text-transparent transition-colors duration-200 ${
+                darkMode 
+                  ? 'from-white to-gray-200' 
+                  : 'from-slate-900 to-slate-700'
+              }`}>
+                AI Fiesta
+              </h1>
+            </div>
+          </div>
+
+          {/* New Chat Button */}
+          <button
+            onClick={handleNewChat}
+            className="w-full flex items-center justify-center space-x-3 px-4 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98] group relative"
+            title="Start New Comparison"
+          >
+            <Plus className="w-5 h-5 transition-transform group-hover:rotate-90" />
+            <span>New Comparison</span>
+            {/* Tooltip for hover */}
+            <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10 pointer-events-none">
+              Start a new AI model comparison
+              <div className="absolute right-full top-1/2 transform -translate-y-1/2 -mr-1 w-0 h-0 border-t-4 border-b-4 border-r-4 border-r-gray-900 border-t-transparent border-b-transparent"></div>
+            </div>
+          </button>
+        </div>
+
+        {/* Navigation */}
+        <div className="p-4 space-y-2">
+          <Link
+            href="/chat"
+            className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
+              darkMode 
+                ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
+            }`}
+            title="Current Chat"
+          >
+            <MessageSquare className="w-5 h-5 transition-colors group-hover:text-blue-600" />
+            <span className="font-medium">Current Chat</span>
+            {/* Tooltip for hover */}
+            <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10 pointer-events-none">
+              View your current chat session
+              <div className="absolute right-full top-1/2 transform -translate-y-1/2 -mr-1 w-0 h-0 border-t-4 border-b-4 border-r-4 border-r-gray-900 border-t-transparent border-b-transparent"></div>
+            </div>
+          </Link>
+          
+          <Link
+            href="/history"
+            className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
+              darkMode 
+                ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
+            }`}
+            title="History"
+          >
+            <Clock className="w-5 h-5 transition-colors group-hover:text-blue-600" />
+            <span className="font-medium">History</span>
+            {/* Tooltip for hover */}
+            <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10 pointer-events-none">
+              View your chat history
+              <div className="absolute right-full top-1/2 transform -translate-y-1/2 -mr-1 w-0 h-0 border-t-4 border-b-4 border-r-4 border-r-gray-900 border-t-transparent border-b-transparent"></div>
+            </div>
+          </Link>
+          
+          <Link
+            href="/dashboard"
+            className={`flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
+              darkMode 
+                ? 'text-gray-300 hover:text-white hover:bg-gray-700/50' 
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/50'
+            }`}
+            title="Dashboard"
+          >
+            <BarChart3 className="w-5 h-5 transition-colors group-hover:text-blue-600" />
+            <span className="font-medium">Dashboard</span>
+            {/* Tooltip for hover */}
+            <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10 pointer-events-none">
+              View analytics and statistics
+              <div className="absolute right-full top-1/2 transform -translate-y-1/2 -mr-1 w-0 h-0 border-t-4 border-b-4 border-r-4 border-r-gray-900 border-t-transparent border-b-transparent"></div>
+            </div>
+          </Link>
+        </div>
+        </div>
+        
+        {/* Profile Section at Bottom */}
+        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t transition-colors duration-200 ${
+          darkMode 
+            ? 'bg-gray-800/95 border-gray-700 backdrop-blur-xl' 
+            : 'bg-white/95 border-slate-200/30 backdrop-blur-xl'
+        }`}>
+          <div className="relative" ref={profileDropdownRef}>
+            <div 
+              className="flex items-center justify-between cursor-pointer hover:bg-gray-700/10 dark:hover:bg-gray-700/30 p-2 rounded-lg transition-all duration-300 ease-out"
+              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+              title="User Profile"
+            >
+              <div className="text-sm text-slate-700 dark:text-gray-300 truncate">
+                {user?.email || 'user@example.com'}
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
+                  {user?.user_metadata?.avatar_url ? (
+                    <img 
+                      src={user.user_metadata.avatar_url} 
+                      alt="Profile" 
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xs font-bold text-white">
+                      {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                    </span>
+                  )}
+                </div>
+                <ChevronDown className={`w-4 h-4 text-slate-500 dark:text-gray-400 transition-all duration-300 ease-out ${
+                  showProfileDropdown ? 'rotate-180' : ''
+                }`} />
+              </div>
+            </div>
+            
+            {/* Modern Profile Dropdown Menu */}
+            {showProfileDropdown && (
+              <div className="absolute bottom-full right-0 mb-2 w-64 rounded-2xl border shadow-xl transition-all duration-300 transform origin-bottom bg-white border-slate-200/50 dark:bg-gray-800 dark:border-gray-700/50 backdrop-blur-xl overflow-hidden">
+                <div className="py-2">
+                  {/* User Profile Header */}
+                  <div className="px-4 py-4 border-b border-slate-200/30 dark:border-gray-700/50 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-gray-700/30 dark:to-gray-800/30">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
+                        {user?.user_metadata?.avatar_url ? (
+                          <img 
+                            src={user.user_metadata.avatar_url} 
+                            alt="Profile" 
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-sm font-bold text-white">
+                            {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-slate-900 dark:text-white truncate">
+                          {user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')}
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-gray-300 truncate">
+                          {user?.email || 'user@example.com'}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Menu Items */}
+                  <button
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      openPaymentPopup();
+                    }}
+                    className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200 text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
+                      <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <span className="font-medium">Pricing Plans</span>
+                  </button>
+                  
+                  <Link href="/dashboard/profile">
+                    <div 
+                      className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                      }}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
+                        <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <span className="font-medium">Profile</span>
+                    </div>
+                  </Link>
+                  
+                  <Link href="/dashboard/settings">
+                    <div 
+                      className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
+                      onClick={() => {
+                        setShowProfileDropdown(false);
+                      }}
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
+                        <Cog className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <span className="font-medium">Settings</span>
+                    </div>
+                  </Link>
+                  
+{/* Dark Mode Toggle */}
+                  <div 
+                    className="flex items-center justify-between px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      toggleDarkMode();
+                    }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
+                        {darkMode ? (
+                          <Sun className="w-4 h-4 text-amber-400" />
+                        ) : (
+                          <Moon className="w-4 h-4 text-amber-600" />
+                        )}
+                      </div>
+                      <span className="font-medium">Dark Mode</span>
+                    </div>
+                    <div className="relative">
+                      <div className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ${
+                        darkMode ? 'bg-indigo-600' : 'bg-gray-300'
+                      }`}>
+                        <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
+                          darkMode ? 'translate-x-6' : ''
+                        }`}></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="px-4 py-2">
+                    <div className="h-px bg-slate-200/30 dark:bg-gray-700/50 my-1"></div>
+                  </div>
+                  
+                  {/* Add Delete Account option */}
+                  <div 
+                    className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-all duration-200"
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      setShowDeletePopup(true); // Show delete popup
+                    }}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                      <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    </div>
+                    <span className="font-medium">Delete Account</span>
+                  </div>
+                  
+                  <div 
+                    className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-all duration-200"
+                    onClick={() => {
+                      setShowProfileDropdown(false);
+                      signOut();
+                    }}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
+                      <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    </div>
+                    <span className="font-medium">Logout</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
-        <ModelSelectorSection {...modelSelectorProps} />
+        {/* Top Bar with Model Selection */}
+        <div className={`backdrop-blur-sm border-b p-4 transition-colors duration-200 ${
+          darkMode 
+            ? 'bg-gray-800/60 border-gray-700/30' 
+            : 'bg-white/60 border-slate-200/30'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              {/* Only show model count badge when models are selected */}
+              {selectedModels.length > 0 && (
+                <div className={`px-4 py-2 bg-gradient-to-r rounded-full text-sm font-medium transition-colors duration-200 ${
+                  darkMode 
+                    ? 'from-blue-900/50 to-purple-900/50 text-blue-300 border border-blue-700/30' 
+                    : 'from-blue-100 to-purple-100 text-blue-700'
+                }`}>
+                  {selectedModels.length} models selected
+                </div>
+              )}
+              <button
+                onClick={() => setShowModelSelector(!showModelSelector)}
+                className={`flex items-center space-x-2 px-4 py-2 border rounded-xl transition-all duration-200 hover:shadow-md relative group ${
+                  darkMode 
+                    ? 'bg-gray-700/50 hover:bg-gray-600/50 border-gray-600 text-gray-300 hover:text-white' 
+                    : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-700'
+                }`}
+                title="Configure AI Models"
+              >
+                <Settings className={`w-4 h-4 transition-colors duration-200 ${
+                  darkMode ? 'text-gray-400' : 'text-slate-600'
+                }`} />
+                <span className={`font-medium transition-colors duration-200 ${
+                  darkMode ? 'text-gray-300' : 'text-slate-700'
+                }`}>Configure Models</span>
+                {/* Dropdown indicator */}
+                <svg 
+                  className={`w-4 h-4 transition-transform duration-200 ${
+                    showModelSelector ? 'rotate-180' : ''
+                  } ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                {/* Tooltip for hover */}
+                <div className="absolute left-full ml-2 top-1/2 transform -translate-y-1/2 bg-gray-900 text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10 pointer-events-none">
+                  Select AI models for comparison
+                  <div className="absolute right-full top-1/2 transform -translate-y-1/2 -mr-1 w-0 h-0 border-t-4 border-b-4 border-r-4 border-r-gray-900 border-t-transparent border-b-transparent"></div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Model Selector Dropdown */}
+          {showModelSelector && (
+            <div className={`mt-4 p-4 rounded-2xl border shadow-xl transition-all duration-300 transform origin-top animate-fadeIn ${
+              darkMode 
+                ? 'bg-gray-800/95 border-gray-700/50 backdrop-blur-xl' 
+                : 'bg-white border-slate-200/50'
+            }`}>
+              <ModelSelector 
+                selectedModels={selectedModels}
+                onModelToggle={handleModelToggle}
+              />
+            </div>
+          )}
+        </div>
 
         {/* Chat Content */}
         <div className="flex-1 overflow-hidden">
@@ -479,7 +701,7 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
                                 <p className={`font-medium transition-colors duration-200 ${
                                   darkMode ? 'text-white' : 'text-slate-900'
                                 }`}>
-                                  {user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                                  User
                                 </p>
                               </div>
                               <p className={`mt-2 transition-colors duration-200 ${
@@ -559,46 +781,15 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
                   darkMode ? 'text-gray-300' : 'text-slate-600'
                 }`}>
                   Send one message to multiple AI models and compare their responses side by side. 
-                  Click &quot;New Comparison&quot; to begin.
+                  Click "New Comparison" to begin.
                 </p>
                 
-                {/* Suggested Prompts Section */}
-                <div className="mb-8">
-                  <h3 className={`text-lg font-semibold mb-4 text-left ${
-                    darkMode ? 'text-gray-200' : 'text-slate-800'
-                  }`}>
-                    Try these prompts:
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {suggestedPrompts.map((prompt, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setMessage(prompt)}
-                        className={`p-4 text-left rounded-xl transition-all duration-200 hover:scale-[1.02] group ${
-                          darkMode 
-                            ? 'bg-gray-800/50 hover:bg-gray-700/70 border border-gray-700/50 backdrop-blur-sm' 
-                            : 'bg-white/70 hover:bg-white/90 border border-slate-200/50 shadow-sm backdrop-blur-sm'
-                        } hover:shadow-lg`}>
-                        <div className="flex items-start space-x-3">
-                          <div className={`mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-200 ${
-                            darkMode 
-                              ? 'bg-gradient-to-br from-violet-900/50 to-purple-900/50 group-hover:from-violet-800/70 group-hover:to-purple-800/70' 
-                              : 'bg-gradient-to-br from-violet-100 to-purple-100 group-hover:from-violet-200 group-hover:to-purple-200'
-                          }`}>
-                            <Sparkles className={`w-3 h-3 ${
-                              darkMode ? 'text-violet-400' : 'text-violet-600'
-                            }`} />
-                          </div>
-                          <span className={`text-sm font-medium transition-colors duration-200 ${
-                            darkMode ? 'text-gray-200' : 'text-slate-700'
-                          }`}>{prompt}</span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-               
+                <button
+                  onClick={startNewComparison}
+                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Start New Comparison
+                </button>
               </div>
             </div>
           )}
