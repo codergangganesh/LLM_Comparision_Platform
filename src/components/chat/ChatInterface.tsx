@@ -326,7 +326,7 @@ export default function ChatInterface() {
                     className="flex items-center space-x-3 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl font-medium hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 active:scale-95"
                   >
                     <Send className="w-5 h-5" />
-                    <span>{loading.length > 0 ? 'Sending...' : 'Compare'}</span>
+                    <span>{loading.length > 0 ? 'Sending...' : 'Chat'}</span>
                   </button>
                 </div>
               </form>

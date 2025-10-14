@@ -731,7 +731,7 @@ export default function ModernHistoryInterface() {
               
               {/* Sort and Filter Controls */}
               <div className="flex items-center space-x-3 relative">
-                {/* Refresh Button */}
+                {/* Refresh Button (text-only) */}
                 <button
                   onClick={() => {
                     // Clear cache and reload
@@ -740,32 +740,28 @@ export default function ModernHistoryInterface() {
                     chatHistoryService.clearCache();
                     loadChatSessions();
                   }}
-                  className={`p-3 rounded-xl transition-all duration-300 flex items-center space-x-2 backdrop-blur-sm ${
+                  className={`px-4 py-3 rounded-xl transition-all duration-300 flex items-center space-x-2 backdrop-blur-sm ${
                     darkMode 
                       ? 'bg-gray-800/60 border border-gray-700/50 text-gray-300 hover:bg-gray-700/80 hover:border-gray-600/70 hover:shadow-lg' 
                       : 'bg-white/80 border border-slate-200/50 text-slate-700 hover:border-slate-300/70 hover:shadow-lg'
                   }`}
                   title="Refresh history"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                  </svg>
-                  <span className="hidden sm:inline font-medium">Refresh</span>
+                  <span className="font-medium">Refresh</span>
                 </button>
                 
-                {/* Delete All Button - Only show when there are sessions */}
+                {/* Delete All Button - Only show when there are sessions (text-only) */}
                 {chatSessions.length > 0 && (
                   <button
                     onClick={() => setShowDeleteAllPopup(true)}
-                    className={`p-3 rounded-xl transition-all duration-300 flex items-center space-x-2 backdrop-blur-sm ${
+                    className={`px-4 py-3 rounded-xl transition-all duration-300 flex items-center space-x-2 backdrop-blur-sm ${
                       darkMode 
                         ? 'bg-red-600/80 hover:bg-red-700/90 text-white border border-red-500/30 hover:border-red-400/50 hover:shadow-lg' 
                         : 'bg-red-500 hover:bg-red-600 text-white border border-red-400/30 hover:border-red-300/50 hover:shadow-lg'
                     }`}
                     title="Delete all history"
                   >
-                    <Trash2 className="w-5 h-5" />
-                    <span className="hidden sm:inline font-medium">Delete All</span>
+                    <span className="font-medium">Delete All</span>
                   </button>
                 )}
                 

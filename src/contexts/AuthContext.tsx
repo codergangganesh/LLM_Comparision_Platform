@@ -23,6 +23,7 @@ interface AuthContextType {
   signOut: (showLoading?: (message?: string) => void, hideLoading?: () => void) => Promise<void>
   signUp: (email: string, password: string, showLoading?: (message?: string) => void, hideLoading?: () => void) => Promise<{ error?: { message: string } }>
   deleteAccount: (password: string, showLoading?: (message?: string) => void, hideLoading?: () => void) => Promise<{ error?: { message: string } }>
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<{ error?: { message: string } }>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -263,6 +264,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const currentEmail = sessionData.session?.user?.email || user?.email || ''
+      if (!currentEmail) {
+        return { error: { message: 'No authenticated user.' } }
+      }
+      // Re-authenticate to verify current password (email/password users)
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: currentEmail,
+        password: currentPassword
+      })
+      if (reauthError) {
+        return { error: { message: 'Current password is incorrect.' } }
+      }
+      // Update password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+      })
+      if (updateError) {
+        return { error: { message: updateError.message || 'Failed to update password.' } }
+      }
+      // Force re-login with new password
+      await supabase.auth.signOut()
+      setUser(null)
+      return { error: undefined }
+    } catch (e) {
+      console.error('Update password error:', e)
+      return { error: { message: 'An unexpected error occurred.' } }
+    }
+  }
+
   const value = {
     user,
     loading,
@@ -271,7 +304,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithGithub,
     signOut,
     signUp,
-    deleteAccount
+    deleteAccount,
+    updatePassword
   }
 
   return (

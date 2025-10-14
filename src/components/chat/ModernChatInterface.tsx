@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import type React from 'react'
 import { Send, Settings, Plus, MessageSquare, Sparkles, Brain, BarChart3, ChevronDown, User, LogOut, Cog, Clock, Trash2, CreditCard, Moon, Sun } from 'lucide-react'
 import { AVAILABLE_MODELS } from '@/lib/models'
 import { AIModel } from '@/types/app'
@@ -13,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useDarkMode } from '@/contexts/DarkModeContext'
 import { usePopup } from '@/contexts/PopupContext'
 import { chatHistoryService } from '@/services/chatHistory.service'
-import DeleteAccountPopup from '../layout/DeleteAccountPopup'
+import ProfileDropdown from '@/components/layout/ProfileDropdown'
 
 interface ModernChatInterfaceProps {
   initialConversation?: any | null
@@ -28,15 +29,19 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
   const [loading, setLoading] = useState<string[]>([])
   const [selectedModels, setSelectedModels] = useState<string[]>(
-    AVAILABLE_MODELS.slice(0, 3).map(model => model.id)
+    AVAILABLE_MODELS.slice(0, 2).map(model => model.id)
   )
   const [showModelSelector, setShowModelSelector] = useState(false)
   const [showBlankPage, setShowBlankPage] = useState(false)
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false)
-  const [showDeletePopup, setShowDeletePopup] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const profileDropdownRef = useRef<HTMLDivElement>(null)
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const suggestedPrompts = [
+    'Compare GPT-4o, Claude 3.5, and Llama 3.1 on code review',
+    'Which model writes better SQL from a natural language spec?',
+    'Summarize this article and extract 5 action items',
+    'Generate test cases for this API and estimate coverage'
+  ]
 
   // Load chat sessions from API on component mount
   useEffect(() => {
@@ -142,19 +147,7 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
     }
   }, [message])
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
-        setShowProfileDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+  
 
   const handleNewChat = () => {
     setShowBlankPage(true)
@@ -169,11 +162,12 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
   }
 
   const handleModelToggle = (modelId: string) => {
-    setSelectedModels(prev => 
-      prev.includes(modelId)
-        ? prev.filter(id => id !== modelId)
-        : [...prev, modelId]
-    )
+    setSelectedModels(prev => {
+      const isSelected = prev.includes(modelId)
+      if (isSelected) return prev.filter(id => id !== modelId)
+      if (prev.length >= 3) return prev // enforce max 3
+      return [...prev, modelId]
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -289,31 +283,30 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
     return AVAILABLE_MODELS.find(model => model.id === modelId)
   }
 
-  // Add the delete account confirmation handler
-  const handleDeleteAccountConfirm = async (password: string) => {
-    setIsDeleting(true)
-    try {
-      // Here you would implement the actual account deletion logic
-      // This might involve:
-      // 1. Verifying the password with your authentication service
-      // 2. Deleting user data from your database
-      // 3. Deleting the user from your authentication service
-      // 4. Signing out the user
-      console.log('Deleting account with password:', password)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // After successful deletion, sign out the user
-      await signOut()
-    } catch (error) {
-      console.error('Error deleting account:', error)
-      // Handle error (show error message to user)
-    } finally {
-      setIsDeleting(false)
-      setShowDeletePopup(false)
+  const highlightModelsInText = (text: string): React.ReactNode => {
+    const modelNames = AVAILABLE_MODELS.map(m => m.label)
+    const pattern = new RegExp(`\\b(${modelNames.map(n => n.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')).join('|')})\\b`, 'gi')
+    const parts: React.ReactNode[] = []
+    let lastIndex = 0
+    let match: RegExpExecArray | null
+    while ((match = pattern.exec(text)) !== null) {
+      const matchText = match[0]
+      const start = match.index
+      const end = start + matchText.length
+      if (start > lastIndex) parts.push(text.slice(lastIndex, start))
+      parts.push(
+        <span key={`${start}-${end}`} className="relative inline-block group">
+          <span className="px-1 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 dark:bg-indigo-500/20">{matchText}</span>
+          <span className="absolute -top-8 left-0 opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 rounded-lg bg-gray-900 text-white dark:bg-black/90 whitespace-nowrap">Chat</span>
+        </span>
+      )
+      lastIndex = end
     }
+    if (lastIndex < text.length) parts.push(text.slice(lastIndex))
+    return parts
   }
+
+  
 
   return (
     <div className={`flex h-screen transition-colors duration-200 ${
@@ -422,177 +415,17 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
         </div>
         </div>
         
-        {/* Profile Section at Bottom */}
+        {/* Profile Section at Bottom (shared style) */}
         <div className={`absolute bottom-0 left-0 right-0 p-4 border-t transition-colors duration-200 ${
           darkMode 
             ? 'bg-gray-800/95 border-gray-700 backdrop-blur-xl' 
             : 'bg-white/95 border-slate-200/30 backdrop-blur-xl'
         }`}>
-          <div className="relative" ref={profileDropdownRef}>
-            <div 
-              className="flex items-center justify-between cursor-pointer hover:bg-gray-700/10 dark:hover:bg-gray-700/30 p-2 rounded-lg transition-all duration-300 ease-out"
-              onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-              title="User Profile"
-            >
-              <div className="text-sm text-slate-700 dark:text-gray-300 truncate">
-                {user?.email || 'user@example.com'}
-              </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
-                  {user?.user_metadata?.avatar_url ? (
-                    <img 
-                      src={user.user_metadata.avatar_url} 
-                      alt="Profile" 
-                      className="w-8 h-8 rounded-full object-cover"
-                    />
-                  ) : (
-                    <span className="text-xs font-bold text-white">
-                      {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                    </span>
-                  )}
-                </div>
-                <ChevronDown className={`w-4 h-4 text-slate-500 dark:text-gray-400 transition-all duration-300 ease-out ${
-                  showProfileDropdown ? 'rotate-180' : ''
-                }`} />
-              </div>
-            </div>
-            
-            {/* Modern Profile Dropdown Menu */}
-            {showProfileDropdown && (
-              <div className="absolute bottom-full right-0 mb-2 w-64 rounded-2xl border shadow-xl transition-all duration-300 transform origin-bottom bg-white border-slate-200/50 dark:bg-gray-800 dark:border-gray-700/50 backdrop-blur-xl overflow-hidden">
-                <div className="py-2">
-                  {/* User Profile Header */}
-                  <div className="px-4 py-4 border-b border-slate-200/30 dark:border-gray-700/50 bg-gradient-to-r from-indigo-50/50 to-purple-50/50 dark:from-gray-700/30 dark:to-gray-800/30">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md">
-                        {user?.user_metadata?.avatar_url ? (
-                          <img 
-                            src={user.user_metadata.avatar_url} 
-                            alt="Profile" 
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <span className="text-sm font-bold text-white">
-                            {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-slate-900 dark:text-white truncate">
-                          {user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')}
-                        </div>
-                        <div className="text-xs text-slate-500 dark:text-gray-300 truncate">
-                          {user?.email || 'user@example.com'}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Menu Items */}
-                  <button
-                    onClick={() => {
-                      setShowProfileDropdown(false);
-                      openPaymentPopup();
-                    }}
-                    className="flex items-center space-x-3 w-full px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200 text-left"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
-                      <CreditCard className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <span className="font-medium">Pricing Plans</span>
-                  </button>
-                  
-                  <Link href="/dashboard/profile">
-                    <div 
-                      className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
-                      onClick={() => {
-                        setShowProfileDropdown(false);
-                      }}
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
-                        <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                      </div>
-                      <span className="font-medium">Profile</span>
-                    </div>
-                  </Link>
-                  
-                  <Link href="/dashboard/settings">
-                    <div 
-                      className="flex items-center space-x-3 px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
-                      onClick={() => {
-                        setShowProfileDropdown(false);
-                      }}
-                    >
-                      <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
-                        <Cog className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                      </div>
-                      <span className="font-medium">Settings</span>
-                    </div>
-                  </Link>
-                  
-{/* Dark Mode Toggle */}
-                  <div 
-                    className="flex items-center justify-between px-4 py-3 text-sm text-slate-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700/50 cursor-pointer transition-all duration-200"
-                    onClick={() => {
-                      setShowProfileDropdown(false);
-                      toggleDarkMode();
-                    }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-gray-700 flex items-center justify-center">
-                        {darkMode ? (
-                          <Sun className="w-4 h-4 text-amber-400" />
-                        ) : (
-                          <Moon className="w-4 h-4 text-amber-600" />
-                        )}
-                      </div>
-                      <span className="font-medium">Dark Mode</span>
-                    </div>
-                    <div className="relative">
-                      <div className={`w-12 h-6 flex items-center rounded-full p-1 transition-colors duration-200 ${
-                        darkMode ? 'bg-indigo-600' : 'bg-gray-300'
-                      }`}>
-                        <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-200 ${
-                          darkMode ? 'translate-x-6' : ''
-                        }`}></div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="px-4 py-2">
-                    <div className="h-px bg-slate-200/30 dark:bg-gray-700/50 my-1"></div>
-                  </div>
-                  
-                  {/* Add Delete Account option */}
-                  <div 
-                    className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-all duration-200"
-                    onClick={() => {
-                      setShowProfileDropdown(false);
-                      setShowDeletePopup(true); // Show delete popup
-                    }}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-                      <Trash2 className="w-4 h-4 text-red-600 dark:text-red-400" />
-                    </div>
-                    <span className="font-medium">Delete Account</span>
-                  </div>
-                  
-                  <div 
-                    className="flex items-center space-x-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer transition-all duration-200"
-                    onClick={() => {
-                      setShowProfileDropdown(false);
-                      signOut();
-                    }}
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-red-100 dark:bg-red-900/20 flex items-center justify-center">
-                      <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
-                    </div>
-                    <span className="font-medium">Logout</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <ProfileDropdown 
+            darkMode={darkMode}
+            onToggleDarkMode={toggleDarkMode}
+            onNewConversation={handleNewChat}
+          />
         </div>
       </div>
 
@@ -689,24 +522,36 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
                       }`}>
                         <div className="max-w-4xl mx-auto">
                           <div className="flex items-start space-x-4">
-                            <div className={`w-8 h-8 bg-gradient-to-br rounded-lg flex items-center justify-center transition-colors duration-200 ${
-                              darkMode 
-                                ? 'from-blue-600 to-purple-600' 
-                                : 'from-slate-600 to-slate-700'
-                            }`}>
-                              <span className="text-white text-sm font-bold">U</span>
-                            </div>
+                            {user?.user_metadata?.avatar_url ? (
+                              <img 
+                                src={user.user_metadata.avatar_url}
+                                alt="Profile"
+                                className="w-8 h-8 rounded-lg object-cover ring-2 ring-indigo-500/30"
+                              />
+                            ) : (
+                              <div className={`w-8 h-8 bg-gradient-to-br rounded-lg flex items-center justify-center transition-colors duration-200 ${
+                                darkMode 
+                                  ? 'from-indigo-600 to-purple-600' 
+                                  : 'from-slate-600 to-slate-700'
+                              } ring-2 ring-indigo-500/20`}>
+                                <span className="text-white text-sm font-bold">
+                                  {(user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')).charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex-1">
                               <div className="flex items-center space-x-2">
                                 <p className={`font-medium transition-colors duration-200 ${
                                   darkMode ? 'text-white' : 'text-slate-900'
                                 }`}>
-                                  User
+                                  {user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')}
                                 </p>
                               </div>
                               <p className={`mt-2 transition-colors duration-200 ${
                                 darkMode ? 'text-gray-200' : 'text-slate-800'
-                              }`}>{session.message}</p>
+                              }`}>
+                                {highlightModelsInText(session.message)}
+                              </p>
                               <p className={`text-xs mt-1 transition-colors duration-200 ${
                                 darkMode ? 'text-gray-400' : 'text-slate-500'
                               }`}>
@@ -768,7 +613,7 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
             <div className="h-full flex items-center justify-center p-8">
               <div className="text-center max-w-2xl">
                 <div className={`w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl transition-transform duration-300 hover:scale-105 ${
-                  darkMode ? 'shadow-blue-500/20' : 'shadow-blue-500/30'
+                  darkMode ? 'shadow-blue-500/30 ring-2 ring-indigo-500/30' : 'shadow-blue-500/30'
                 }`}>
                   <Sparkles className="w-10 h-10 text-white" />
                 </div>
@@ -780,16 +625,58 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
                 <p className={`text-lg mb-8 leading-relaxed transition-colors duration-200 ${
                   darkMode ? 'text-gray-300' : 'text-slate-600'
                 }`}>
-                  Send one message to multiple AI models and compare their responses side by side. 
-                  Click "New Comparison" to begin.
+                  Send one message to multiple AI models and compare their responses side by side.
                 </p>
-                
-                <button
-                  onClick={startNewComparison}
-                  className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-semibold transition-all duration-200 hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  Start New Comparison
-                </button>
+                <div className={`max-w-3xl mx-auto p-4 mt-2 rounded-2xl border shadow-xl backdrop-blur-xl ${
+                  darkMode
+                    ? 'bg-gray-900/40 border-gray-700/60'
+                    : 'bg-white/70 border-slate-200/70'
+                }`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <Sparkles className={`${darkMode ? 'text-indigo-300' : 'text-indigo-600'} w-5 h-5`} />
+                      <span className={`text-sm font-semibold ${darkMode ? 'text-indigo-200' : 'text-indigo-700'}`}></span>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {suggestedPrompts.map((prompt) => (
+                      <button
+                        key={prompt}
+                        onClick={() => {
+                          setMessage(prompt)
+                          setTimeout(() => textareaRef.current?.focus(), 0)
+                        }}
+                        className={`group text-left px-4 py-4 rounded-xl transition-all duration-200 border relative overflow-hidden ${
+                          darkMode
+                            ? 'bg-gradient-to-br from-gray-800/70 to-gray-800/30 border-gray-700 hover:from-gray-800/90 hover:to-gray-800/50'
+                            : 'bg-gradient-to-br from-white to-slate-50 border-slate-200 hover:from-white hover:to-slate-100'
+                        } hover:shadow-lg`}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shadow-sm ${
+                            darkMode ? 'bg-indigo-600/20' : 'bg-indigo-100'
+                          }`}>
+                            <MessageSquare className={`${darkMode ? 'text-indigo-300' : 'text-indigo-600'} w-4 h-4`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`${darkMode ? 'text-gray-200' : 'text-slate-800'} text-sm leading-snug`}>{prompt}</p>
+                          </div>
+                          <div className={`self-center ml-2 w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                            darkMode ? 'bg-gray-700 group-hover:bg-indigo-700/60' : 'bg-slate-100 group-hover:bg-indigo-100'
+                          }`}>
+                            <svg className={`${darkMode ? 'text-indigo-300' : 'text-indigo-600'} w-4 h-4 transition-transform group-hover:translate-x-0.5`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M5 12h14" />
+                              <path d="M12 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
+                        <div className={`pointer-events-none absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity ${
+                          darkMode ? 'ring-1 ring-indigo-500/30' : 'ring-1 ring-indigo-300/40'
+                        }`} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -863,13 +750,6 @@ export default function ModernChatInterface({ initialConversation }: ModernChatI
         )}
       </div>
       
-      {/* Add DeleteAccountPopup at the end of the component */}
-      <DeleteAccountPopup
-        isOpen={showDeletePopup}
-        onClose={() => setShowDeletePopup(false)}
-        onConfirm={handleDeleteAccountConfirm}
-        isLoading={isDeleting}
-      />
     </div>
   )
 }

@@ -25,10 +25,7 @@ import {
   Sparkles,
   Download,
   Bell,
-  MessageSquare,
-  Database,
-  Filter,
-  Calendar
+  MessageSquare
 } from 'lucide-react'
 import SimpleProfileIcon from '@/components/layout/SimpleProfileIcon'
 import NotificationBell from '@/components/ui/NotificationBell'
@@ -90,15 +87,16 @@ export default function DashboardPage() {
     comparisons: 0,
     storage: 0
   })
+  const [avgResponsesPerComparison, setAvgResponsesPerComparison] = useState<number>(0)
+  const [showAllGraphs, setShowAllGraphs] = useState(false)
+  const [uniqueModelCount, setUniqueModelCount] = useState<number>(0)
   
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [loadingData, setLoadingData] = useState(true)
   const [isExportOpen, setIsExportOpen] = useState(false)
   const [availableModels, setAvailableModels] = useState<any[]>([])
   const [hasUsedModels, setHasUsedModels] = useState(false)
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const [selectedModels, setSelectedModels] = useState<string[]>([])
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
+  
   
   const [responseTimeData, setResponseTimeData] = useState<{name: string; value: number; color: string}[]>([])
   const [messagesTypedData, setMessagesTypedData] = useState<{name: string; value: number; color: string}[]>([])
@@ -131,23 +129,7 @@ export default function DashboardPage() {
   }, [])
 
   // Filter sessions by selected models and time range
-  const filterSessions = (sessionsToFilter: ChatSession[]): ChatSession[] => {
-    let result = sessionsToFilter
-    // Time range filter
-    const days = timeRange === '7d' ? 7 : timeRange === '90d' ? 90 : 30
-    const endDate = new Date()
-    const startDate = new Date()
-    startDate.setDate(startDate.getDate() - days)
-    result = result.filter(s => {
-      const d = new Date(s.timestamp)
-      return d >= startDate && d <= endDate
-    })
-    // Models filter
-    if (selectedModels.length > 0) {
-      result = result.filter(s => (s.selectedModels || []).some(m => selectedModels.includes(m)))
-    }
-    return result
-  }
+  const filterSessions = (sessionsToFilter: ChatSession[]): ChatSession[] => sessionsToFilter
 
   // Function to update dashboard data
   const updateDashboardData = async (fetchedSessions: ChatSession[] | null = null) => {
@@ -206,6 +188,13 @@ export default function DashboardPage() {
         // Calculate usage data
         const usage = dashboardService.getUsageData(filteredSessions)
         setUsageData(usage)
+        // Derived metrics
+        const totalResponses = filteredSessions.reduce((sum, s) => sum + ((s as any).responses ? (s as any).responses.length : 0), 0)
+        const avg = filteredSessions.length > 0 ? totalResponses / filteredSessions.length : 0
+        setAvgResponsesPerComparison(Number.isFinite(avg) ? parseFloat(avg.toFixed(2)) : 0)
+        const uniq = new Set<string>()
+        filteredSessions.forEach(s => (s.selectedModels || []).forEach(id => uniq.add(id)))
+        setUniqueModelCount(uniq.size)
         
         // Update charts with actual data
         setResponseTimeData(dashboardService.getResponseTimeData(filteredSessions))
@@ -253,15 +242,7 @@ export default function DashboardPage() {
     fetchData()
   }, [user, loading])
 
-  // Re-compute when filters change
-  useEffect(() => {
-    const recompute = async () => {
-      if (!user || loading) return
-      const fetchedSessions = await chatHistoryService.getChatSessions()
-      await updateDashboardData(fetchedSessions || [])
-    }
-    recompute()
-  }, [selectedModels, timeRange])
+  
 
   // Set up real-time subscription for chat sessions
   useEffect(() => {
@@ -497,7 +478,7 @@ export default function DashboardPage() {
                 <p className={`mt-1 transition-colors duration-200 ${
                   darkMode ? 'text-gray-300' : 'text-slate-600'
                 }`}>
-                  Welcome back! Here&#39;s your AI platform overview.
+                  Welcome back, <span className="font-semibold">{user?.id}</span> — {user?.user_metadata?.full_name || (user?.email ? user.email.split('@')[0] : 'User')}!
                 </p>
                 {!hasUsedModels && (
                   <p className={`mt-2 text-sm transition-colors duration-200 ${
@@ -515,137 +496,20 @@ export default function DashboardPage() {
                 {/* Simple Profile Icon */}
                 <SimpleProfileIcon />
 
-                {/* Time Range Selector */}
-                <div className="relative">
-                  <div className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 shadow-sm ${
-                    darkMode
-                      ? 'bg-gradient-to-r from-gray-800 to-gray-900 text-white border border-gray-700'
-                      : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-800 border border-gray-300'
-                  }`}>
-                    <Calendar className={`w-4 h-4 ${darkMode ? 'text-white' : 'text-gray-800'}`} />
-                    <select
-                      value={timeRange}
-                      onChange={(e) => setTimeRange(e.target.value as '7d' | '30d' | '90d')}
-                      aria-label="Select time range"
-                      className={`bg-transparent text-sm font-medium focus:outline-none ${
-                        darkMode ? 'text-white' : 'text-gray-800'
-                      }`}
-                    >
-                      <option value="7d">Last 7 days</option>
-                      <option value="30d">Last 30 days</option>
-                      <option value="90d">Last 90 days</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Filter Dropdown */}
-                <div className="relative">
-                  <button 
-                    onClick={() => setIsFilterOpen(!isFilterOpen)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md ${
-                      darkMode 
-                        ? 'bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white border border-gray-600' 
-                        : 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-800 border border-gray-300' 
-                    }`}
-                  >
-                    <Filter className="w-4 h-4" />
-                    <span className="font-medium">Filter</span>
-                  </button>
-                  {isFilterOpen && (
-                    <div 
-                      className={`absolute right-0 w-80 rounded-xl shadow-xl z-20 overflow-hidden transform transition-all duration-200 ease-in-out mt-2 ${
-                        darkMode 
-                          ? 'bg-gray-800/95 border border-gray-700 backdrop-blur-xl' 
-                          : 'bg-white/95 border border-slate-200 backdrop-blur-xl'
-                      }`}
-                    >
-                      <div className="py-3">
-                        <div className={`px-4 py-3 border-b ${
-                          darkMode ? 'border-gray-700' : 'border-slate-200'
-                        }`}>
-                          <div className="flex justify-between items-center">
-                            <h3 className={`text-sm font-semibold ${
-                              darkMode ? 'text-gray-200' : 'text-slate-800'
-                            }`}>
-                              Filter by Models
-                            </h3>
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => setSelectedModels(availableModels.map((m: any) => m.id))}
-                                className={`text-xs px-2 py-1 rounded ${
-                                  darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                }`}
-                              >
-                                Select All
-                              </button>
-                              <button
-                                onClick={() => setSelectedModels([])}
-                                className={`text-xs px-2 py-1 rounded ${
-                                  darkMode ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                }`}
-                              >
-                                Clear
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="max-h-60 overflow-y-auto">
-                          {availableModels.map((model: any) => (
-                            <div
-                              key={model.id}
-                              className={`px-4 py-2 flex items-center justify-between cursor-pointer transition-colors ${
-                                darkMode ? 'hover:bg-gray-700/50' : 'hover:bg-slate-100'
-                              } ${
-                                selectedModels.includes(model.id)
-                                  ? darkMode ? 'bg-blue-900/30' : 'bg-blue-100'
-                                  : ''
-                              }`}
-                              onClick={() => {
-                                setSelectedModels(prev => prev.includes(model.id) ? prev.filter(id => id !== model.id) : [...prev, model.id])
-                              }}
-                            >
-                              <div className="flex items-center space-x-3">
-                                <div className={`w-3 h-3 rounded-full ${
-                                  selectedModels.includes(model.id) ? 'bg-blue-500' : (darkMode ? 'bg-gray-500' : 'bg-gray-400')
-                                }`}></div>
-                                <span className={`text-sm ${
-                                  darkMode
-                                    ? selectedModels.includes(model.id) ? 'text-white font-medium' : 'text-gray-300'
-                                    : selectedModels.includes(model.id) ? 'text-gray-900 font-medium' : 'text-gray-700'
-                                }`}>
-                                  {model.displayName || model.label || model.id}
-                                </span>
-                              </div>
-                              <span className={`text-xs px-2 py-1 rounded ${
-                                darkMode ? 'bg-gray-700 text-gray-400' : 'bg-gray-200 text-gray-600'
-                              }`}>
-                                {model.provider || 'model'}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                        <div className={`px-4 py-3 border-t ${darkMode ? 'border-gray-700' : 'border-slate-200'}`}>
-                          <div className="text-xs text-center">
-                            {selectedModels.length > 0 ? `${selectedModels.length} selected` : 'No models selected (showing all)'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
                 
-                {/* Export Dropdown - Modern Design */}
+                
+                {/* Export Dropdown - Icon Only */}
                 <div className="relative">
                   <button 
                     onClick={() => setIsExportOpen(!isExportOpen)}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md ${
+                    className={`p-3 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md ${
                       darkMode 
                         ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white' 
                         : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white'
                     }`}
+                    title="Export"
                   >
                     <Download className="w-4 h-4" />
-                    <span className="font-medium">Export</span>
                   </button>
                   
                   {/* Dropdown menu for export options */}
@@ -799,7 +663,7 @@ export default function DashboardPage() {
             <h2 className={`text-2xl font-bold mb-4 transition-colors duration-200 ${
               darkMode ? 'text-white' : 'text-slate-900'
             }`}>
-              Data Usage
+              Resource Usage Overview
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* API Calls Usage */}
@@ -833,7 +697,7 @@ export default function DashboardPage() {
                 <h3 className={`text-lg font-bold mb-2 transition-colors duration-200 ${
                   darkMode ? 'text-white' : 'text-slate-900'
                 }`}>
-                  API Calls
+                  API Calls to Compare Models
                 </h3>
                 
                 <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
@@ -883,7 +747,7 @@ export default function DashboardPage() {
                 <h3 className={`text-lg font-bold mb-2 transition-colors duration-200 ${
                   darkMode ? 'text-white' : 'text-slate-900'
                 }`}>
-                  Model Comparisons
+                  Model Comparisons Performed
                 </h3>
                 
                 <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
@@ -902,7 +766,7 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              {/* Storage Usage */}
+              {/* Avg Responses per Comparison */}
               <div className={`rounded-2xl p-6 transition-all duration-200 ${
                 darkMode 
                   ? 'bg-gray-800/60 border border-gray-700/50' 
@@ -911,21 +775,21 @@ export default function DashboardPage() {
                 <div className="flex items-center justify-between mb-4">
                   <div className={`p-3 rounded-xl bg-gradient-to-r ${
                     darkMode 
-                      ? 'from-green-600 to-green-700 text-white' 
-                      : 'from-green-500 to-green-600 text-white'
+                      ? 'from-indigo-600 to-purple-600 text-white' 
+                      : 'from-indigo-500 to-purple-500 text-white'
                   }`}>
-                    <Database className="w-6 h-6" />
+                    <MessageSquare className="w-6 h-6" />
                   </div>
                   <div className="text-right">
                     <p className={`text-sm ${
                       darkMode ? 'text-gray-400' : 'text-slate-600'
                     }`}>
-                      {usageData.storage.toFixed(2)} MB
+                      Average
                     </p>
-                    <p className={`text-xs ${
-                      darkMode ? 'text-gray-500' : 'text-slate-500'
+                    <p className={`text-2xl font-bold ${
+                      darkMode ? 'text-white' : 'text-slate-900'
                     }`}>
-                      used
+                      {avgResponsesPerComparison}
                     </p>
                   </div>
                 </div>
@@ -933,62 +797,67 @@ export default function DashboardPage() {
                 <h3 className={`text-lg font-bold mb-2 transition-colors duration-200 ${
                   darkMode ? 'text-white' : 'text-slate-900'
                 }`}>
-                  Storage
+                  Avg Responses per Comparison
                 </h3>
-                
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
-                  <div 
-                    className="bg-green-600 h-2 rounded-full" 
-                    style={{ 
-                      width: `${Math.min(100, (usageData.storage / getPlanLimits(userPlan).storage) * 100)}%` 
-                    }}
-                  ></div>
-                </div>
-                
                 <p className={`text-sm ${
                   darkMode ? 'text-gray-400' : 'text-slate-600'
                 }`}>
-                  {Math.min(100, (usageData.storage / getPlanLimits(userPlan).storage) * 100).toFixed(1)}% of {getPlanLimits(userPlan).storage} MB used
+                  Average number of model responses generated per comparison
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Charts Section */}
+          <div className="flex items-center justify-between">
+            <h2 className={darkMode ? 'text-xl font-bold text-white' : 'text-xl font-bold text-slate-900'}>AI Fiesta Analytics</h2>
+            {uniqueModelCount > 1 ? (
+              <button
+                onClick={() => setShowAllGraphs(!showAllGraphs)}
+                className={darkMode ? 'inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium bg-gray-800 text-gray-200 hover:bg-gray-700' : 'inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}
+              >
+                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                {showAllGraphs ? 'Hide' : 'View All'}
+              </button>
+            ) : null}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <BarChart 
               data={responseTimeData} 
-              title="Response Time Comparison" 
+              title="Model Latency Comparison" 
               unit="s"
             />
             <SimpleCircleChart 
               data={messagesTypedData} 
-              title="Messages Typed per Model" 
+              title="Prompts per Model" 
             />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <BarChart 
               data={modelDataTimeData} 
-              title="Model Data Processing Time" 
+              title="Throughput by Model" 
               unit="s"
             />
-            <LineChart 
-              data={lineChartData} 
-              title="Response Time Trends Over Time" 
-              metrics={lineChartMetrics}
-              metricLabels={lineChartMetricLabels}
-            />
+            {showAllGraphs && (
+              <LineChart 
+                data={lineChartData} 
+                title="Latency Trends Over Time" 
+                metrics={lineChartMetrics}
+                metricLabels={lineChartMetricLabels}
+              />
+            )}
           </div>
 
-          {/* Response Time Distribution Chart */}
-          <div className="grid grid-cols-1 gap-6">
-            <ResponseTimeDistribution 
-              data={responseTimeDistributionData} 
-              title="Response Time Distribution" 
-              unit="s"
-            />
-          </div>
+          {showAllGraphs && (
+            <div className="grid grid-cols-1 gap-6">
+              <ResponseTimeDistribution 
+                data={responseTimeDistributionData} 
+                title="Latency Distribution" 
+                unit="s"
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

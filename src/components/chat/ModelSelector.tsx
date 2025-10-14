@@ -82,30 +82,8 @@ export default function ModelSelector({ selectedModels, onModelToggle }: ModelSe
         </div>
         
         <div className="flex items-center space-x-2">
-          <button
-            onClick={() => {
-              if (selectedModels.length === AVAILABLE_MODELS.length) {
-                // Deselect all
-                AVAILABLE_MODELS.forEach(model => {
-                  if (selectedModels.includes(model.id)) {
-                    onModelToggle(model.id)
-                  }
-                })
-              } else {
-                // Select all
-                AVAILABLE_MODELS.forEach(model => {
-                  if (!selectedModels.includes(model.id)) {
-                    onModelToggle(model.id)
-                  }
-                })
-              }
-            }}
-            className="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all duration-200">
-            {selectedModels.length === AVAILABLE_MODELS.length ? 'Deselect All' : 'Select All'}
-          </button>
-          
           <div className="px-3 py-1 bg-gradient-to-r from-slate-100 to-slate-200 text-slate-700 text-xs font-bold rounded-lg">
-            {selectedModels.length} / {AVAILABLE_MODELS.length}
+            {selectedModels.length} / 3 max
           </div>
         </div>
       </div>
