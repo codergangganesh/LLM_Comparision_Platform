@@ -119,6 +119,24 @@ export default function AIResponseCard({
     return colors[provider as keyof typeof colors] || 'from-slate-500 to-slate-700'
   }
 
+  // Normalize provider logo footprint so header layout adapts to provider brand mark
+  const getProviderLogoSizeClass = (provider: string) => {
+    const sizes: Record<string, string> = {
+      'OpenAI': 'w-12 h-12',
+      'Anthropic': 'w-14 h-10',
+      'Google': 'w-14 h-10',
+      'Meta': 'w-14 h-10',
+      'Mistral AI': 'w-14 h-10',
+      'Microsoft': 'w-14 h-10',
+      'Nous Research': 'w-14 h-10',
+      'OpenRouter': 'w-12 h-12',
+      'DeepSeek': 'w-12 h-12',
+      'Qwen': 'w-12 h-12',
+      'xAI': 'w-12 h-12'
+    }
+    return sizes[provider] || 'w-12 h-12'
+  }
+
   return (
     <div className={`group relative overflow-hidden rounded-2xl transition-all duration-300 hover:scale-102 ${
       isBestResponse 
@@ -142,8 +160,8 @@ export default function AIResponseCard({
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            {/* Model Avatar */}
-            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${getProviderColor(model.provider)} flex items-center justify-center text-white font-bold shadow-lg`}>
+            {/* Model Brand/Avatar with adaptive footprint */}
+            <div className={`${getProviderLogoSizeClass(model.provider)} min-w-[2.5rem] rounded-xl bg-gradient-to-br ${getProviderColor(model.provider)} flex items-center justify-center text-white font-bold shadow-lg`}>
               {model.displayName.charAt(0)}
             </div>
             <div>
@@ -368,21 +386,17 @@ export default function AIResponseCard({
                 )}
               </div>
               
-              {/* Summary Component for Very Long Content */}
-              {isVeryLongContent && (
-                <ResponseSummary 
-                  content={content}
-                  isVisible={showSummary}
-                  onToggle={() => setShowSummary(!showSummary)}
-                />
-              )}
+              {/* Summary Component available for all responses */}
+              <ResponseSummary 
+                content={content}
+                isVisible={showSummary}
+                onToggle={() => setShowSummary(!showSummary)}
+              />
               
               {/* Enhanced Response Stats */}
               <div className="mt-3 space-y-2">
-                {/* Text-to-Speech for Very Long Content */}
-                {isVeryLongContent && (
-                  <TextToSpeech text={content} />
-                )}
+                {/* Text-to-Speech: enable for every message */}
+                <TextToSpeech text={content} />
                 
                 <div className={`flex items-center justify-between text-xs px-2 ${
                   darkMode ? 'text-slate-400' : 'text-slate-500'

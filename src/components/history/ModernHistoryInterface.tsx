@@ -1123,8 +1123,22 @@ export default function ModernHistoryInterface() {
                                         <div key={idx} className="flex items-start">
                                           <span className="mr-2">•</span>
                                           <span className="line-clamp-1">
-                                            {response.content.substring(0, 80)}
-                                            {response.content.length > 80 ? '...' : ''}
+                                            {(() => {
+                                              const text = typeof response === 'string'
+                                                ? response
+                                                : (response && typeof (response as any).content === 'string'
+                                                  ? (response as any).content
+                                                  : '')
+                                              return text.slice(0, 80)
+                                            })()}
+                                            {(() => {
+                                              const text = typeof response === 'string'
+                                                ? response
+                                                : (response && typeof (response as any).content === 'string'
+                                                  ? (response as any).content
+                                                  : '')
+                                              return text.length > 80 ? '...' : ''
+                                            })()}
                                           </span>
                                         </div>
                                       ))}
@@ -1326,6 +1340,8 @@ export default function ModernHistoryInterface() {
                       ? 'text-gray-400 hover:text-white hover:bg-gray-700/50' 
                       : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
                   } ${isDeletingAll ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  aria-label="Close"
+                  title="Close"
                 >
                   <X className="w-5 h-5" />
                 </button>

@@ -9,7 +9,7 @@ export type AiModel = {
 
 export const AVAILABLE_MODELS: AiModel[] = [
   { 
-    id: "nvidia/nemotron-nano-9b-v2:free", 
+    id: "openai/gpt-oss-20b:free", 
     label: "GPT-3.5 Turbo", 
     provider: "OpenAI", 
     contextWindowK: 16000,
@@ -25,7 +25,7 @@ export const AVAILABLE_MODELS: AiModel[] = [
     capabilities: ["text", "code", "image"]
   },
   { 
-    id: "claude-3-haiku-free", 
+    id: "tngtech/deepseek-r1t2-chimera:free", 
     label: "Claude 3 Haiku (Free)", 
     provider: "Anthropic", 
     contextWindowK: 2000,
@@ -33,7 +33,7 @@ export const AVAILABLE_MODELS: AiModel[] = [
     capabilities: ["text", "analysis", "reasoning"]
   },
   { 
-    id: "google/gemma-3n-e2b-it:free", 
+    id: "deepseek/deepseek-r1-0528-qwen3-8b:free", 
     label: "Gemini Flash 1.5 (Free)", 
     provider: "Google", 
     contextWindowK: 10000,
@@ -41,7 +41,7 @@ export const AVAILABLE_MODELS: AiModel[] = [
     capabilities: ["text", "image", "video", "audio"]
   },
   { 
-    id: "llama-3.1-8b-free", 
+    id: "meta-llama/llama-4-maverick:free", 
     label: "LLaMA 3.1 8B (Free)", 
     provider: "Meta", 
     contextWindowK: 8000,
@@ -49,7 +49,7 @@ export const AVAILABLE_MODELS: AiModel[] = [
     capabilities: ["text", "reasoning"]
   },
   { 
-    id: "mistral-7b-free", 
+    id: "nvidia/nemotron-nano-9b-v2:free", 
     label: "Mistral 7B (Free)", 
     provider: "Mistral AI", 
     contextWindowK: 8000,
@@ -57,7 +57,7 @@ export const AVAILABLE_MODELS: AiModel[] = [
     capabilities: ["text", "code"]
   },
   { 
-    id: "phi-3-mini-free", 
+    id: "qwen/qwen3-30b-a3b:free", 
     label: "Phi-3 Mini (Free)", 
     provider: "Microsoft", 
     contextWindowK: 128000,
@@ -65,7 +65,7 @@ export const AVAILABLE_MODELS: AiModel[] = [
     capabilities: ["text", "code", "reasoning"]
   },
   { 
-    id: "auto-select", 
+    id: "qwen/qwen3-4b:free", 
     label: "Auto Select", 
     provider: "OpenRouter", 
     contextWindowK: 128000,
@@ -73,7 +73,7 @@ export const AVAILABLE_MODELS: AiModel[] = [
     capabilities: ["text", "code", "analysis"]
   },
   { 
-    id: "hermes-3-8b-free", 
+    id: "google/gemma-3n-e2b-it:free", 
     label: "Hermes 3 8B (Free)", 
     provider: "Nous Research", 
     contextWindowK: 8000,
