@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@number-flow/react": "^0.5.10",
+    "@stripe/stripe-js": "^8.1.0",
     "@supabase/ssr": "^0.7.0",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.9.1",
@@ -17,9 +18,10 @@
     "critters": "^0.0.23",
     "framer-motion": "^12.23.22",
     "lucide-react": "^0.544.0",
-    "next": "15.5.4",
+    "next": "^15.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "stripe": "^19.1.0",
     "tailwind-merge": "^3.3.1",
     "tsparticles-engine": "^2.12.0",
     "uuid": "^13.0.0"
