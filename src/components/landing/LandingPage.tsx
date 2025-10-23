@@ -8,6 +8,8 @@ import { useOptimizedRouter } from '@/hooks/useOptimizedRouter'
 import { useSearchParams } from 'next/navigation'
 import { MessageSquare, Brain, LogOut, Moon, Sun, User as UserIcon, Star } from 'lucide-react'
 import ModernModelShowcase from './ModernModelShowcase'
+import ModernFeedbackAndPricing from './ModernFeedbackAndPricing'
+import { usePopup } from '@/contexts/PopupContext'
 
 import { useEffect, useState } from 'react'
 import { useDarkMode } from '@/contexts/DarkModeContext'
@@ -26,6 +28,7 @@ export default function LandingPage() {
   const { showLoading, hideLoading } = useLoading()
   const router = useOptimizedRouter()
   const { darkMode, toggleDarkMode } = useDarkMode()
+  const { openPaymentPopup } = usePopup()
 
   const [showSuccessPopup, setShowSuccessPopup] = useState(false)
   const [popupMessage, setPopupMessage] = useState('')
@@ -206,6 +209,30 @@ export default function LandingPage() {
             <div className="flex items-center space-x-4">
               {user ? (
                 <>
+                  {/* Pricing button with modern text design */}
+                  <button
+                    onClick={openPaymentPopup}
+                    className="relative px-4 py-2 rounded-full font-bold transition-all duration-300 group overflow-hidden flex items-center space-x-2 backdrop-blur-sm"
+                  >
+                    {/* Animated gradient background */}
+                    <div className="absolute inset-0 rounded-full">
+                      <div className={`absolute inset-0 rounded-full bg-gradient-to-r ${
+                        darkMode 
+                          ? 'from-yellow-500/20 to-amber-600/20' 
+                          : 'from-yellow-400/30 to-yellow-600/30'
+                      } opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                    </div>
+
+                    {/* Modern text styling */}
+                    <span className={`relative text-sm font-semibold bg-gradient-to-r transition-all duration-300 ${
+                      darkMode
+                        ? 'from-gray-100 to-gray-300 group-hover:from-yellow-300 group-hover:to-yellow-100'
+                        : 'from-slate-800 to-slate-900 group-hover:from-yellow-600 group-hover:to-yellow-800'
+                    } bg-clip-text text-transparent`}>
+                      Pricing
+                    </span>
+                  </button>
+
                   {/* Profile icon for logged-in users */}
                   <div className="flex items-center space-x-2">
                     {/* Dark mode toggle button */}
@@ -295,6 +322,17 @@ export default function LandingPage() {
                     {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                   </button>
 
+                  {/* Pricing button for non-logged-in users */}
+                  <button
+                    onClick={openPaymentPopup}
+                    className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-300 backdrop-blur-sm ${
+                      darkMode
+                        ? 'bg-gray-800/60 border border-gray-700/50 text-gray-300 hover:bg-gray-700/80'
+                        : 'bg-white/70 border border-slate-200/50 text-slate-700 hover:bg-white/90'
+                    }`}>
+                    Pricing
+                  </button>
+
                   {/* Sign in button for non-logged-in users */}
                   <button
                     onClick={handleGoToChat}
@@ -329,7 +367,10 @@ export default function LandingPage() {
         setShowVideoTutorial={setShowVideoTutorial} 
       />
       
-
+      {/* Modern Feedback and Pricing Section */}
+      <div className="px-4 sm:px-6">
+        <ModernFeedbackAndPricing />
+      </div>
       
       {/* Testimonials Section */}
       <section className={`py-24 relative ${
