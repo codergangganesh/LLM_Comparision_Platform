@@ -1,20 +1,33 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Clock, TrendingUp, TrendingDown } from 'lucide-react'
+import { Clock, TrendingUp, TrendingDown, Eye, EyeOff } from 'lucide-react'
 
 interface ResponseTimeDistributionProps {
   data: { name: string; value: number; color: string }[]
   title: string
   unit?: string
+  chartId?: string
+  isExpanded?: boolean
+  onToggleExpand?: () => void
 }
 
-const ResponseTimeDistribution: React.FC<ResponseTimeDistributionProps> = ({ data, title, unit = '' }) => {
+const ResponseTimeDistribution: React.FC<ResponseTimeDistributionProps> = ({ 
+  data, 
+  title, 
+  unit = '',
+  chartId,
+  isExpanded = false,
+  onToggleExpand
+}) => {
+  // Show only first 4 items by default, unless expanded
+  const displayedData = isExpanded ? data : data.slice(0, 4)
+  
   // Find the maximum value for scaling
-  const maxValue = data.length > 0 ? Math.max(...data.map(item => item.value), 0) : 1
+  const maxValue = displayedData.length > 0 ? Math.max(...displayedData.map(item => item.value), 0) : 1
   
   // Calculate average response time
-  const averageTime = data.length > 0 ? data.reduce((sum, item) => sum + item.value, 0) / data.length : 0
+  const averageTime = displayedData.length > 0 ? displayedData.reduce((sum, item) => sum + item.value, 0) / displayedData.length : 0
   
   const [hoveredItem, setHoveredItem] = useState<{name: string, value: number, percentage: number} | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
@@ -38,15 +51,30 @@ const ResponseTimeDistribution: React.FC<ResponseTimeDistributionProps> = ({ dat
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
         {data.length > 0 && (
-          <div className="flex items-center text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">
-            <Clock className="w-3 h-3 mr-1 text-gray-500 dark:text-gray-400" />
-            <span className="font-medium text-gray-900 dark:text-white">
-              Avg: {averageTime.toFixed(2)}{unit}
-            </span>
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">
+              <Clock className="w-3 h-3 mr-1 text-gray-500 dark:text-gray-400" />
+              <span className="font-medium text-gray-900 dark:text-white">
+                Avg: {averageTime.toFixed(2)}{unit}
+              </span>
+            </div>
+            {data.length > 4 && onToggleExpand && (
+              <button 
+                onClick={onToggleExpand}
+                className="p-1 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                aria-label={isExpanded ? `Show fewer ${title}` : `Show all ${title}`}
+              >
+                {isExpanded ? (
+                  <EyeOff className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                ) : (
+                  <Eye className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                )}
+              </button>
+            )}
           </div>
         )}
       </div>
-      {data.length > 0 ? (
+      {displayedData.length > 0 ? (
         <div className="overflow-x-auto">
           <div className="min-w-full">
             {/* Header */}
@@ -57,7 +85,7 @@ const ResponseTimeDistribution: React.FC<ResponseTimeDistributionProps> = ({ dat
             </div>
             
             {/* Data rows */}
-            {data.map((item, index) => {
+            {displayedData.map((item, index) => {
               // Calculate difference from average
               const diffFromAvg = averageTime > 0 ? ((item.value - averageTime) / averageTime) * 100 : 0
               const isAboveAverage = diffFromAvg > 0

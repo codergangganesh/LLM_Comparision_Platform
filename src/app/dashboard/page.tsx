@@ -25,7 +25,9 @@ import {
   Sparkles,
   Download,
   Bell,
-  MessageSquare
+  MessageSquare,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import SimpleProfileIcon from '@/components/layout/SimpleProfileIcon'
 import NotificationBell from '@/components/ui/NotificationBell'
@@ -88,8 +90,16 @@ export default function DashboardPage() {
     storage: 0
   })
   const [avgResponsesPerComparison, setAvgResponsesPerComparison] = useState<number>(0)
-  const [showAllGraphs, setShowAllGraphs] = useState(false)
   const [uniqueModelCount, setUniqueModelCount] = useState<number>(0)
+  
+  // State for visibility control of charts (showing first 4 models by default)
+  const [chartVisibility, setChartVisibility] = useState<Record<string, boolean>>({
+    'model-latency': false,
+    'prompts-per-model': false,
+    'throughput-by-model': false,
+    'latency-trends': false,
+    'latency-distribution': false
+  })
   
   const [sessions, setSessions] = useState<ChatSession[]>([])
   const [loadingData, setLoadingData] = useState(true)
@@ -222,6 +232,14 @@ export default function DashboardPage() {
     }
   }
 
+  // Toggle visibility of a specific chart
+  const toggleChartVisibility = (chartId: string) => {
+    setChartVisibility(prev => ({
+      ...prev,
+      [chartId]: !prev[chartId]
+    }))
+  }
+
   // Fetch dashboard data
   useEffect(() => {
     const fetchData = async () => {
@@ -241,8 +259,6 @@ export default function DashboardPage() {
     
     fetchData()
   }, [user, loading])
-
-  
 
   // Set up real-time subscription for chat sessions
   useEffect(() => {
@@ -499,8 +515,6 @@ export default function DashboardPage() {
                 {/* Simple Profile Icon */}
                 <SimpleProfileIcon />
 
-                
-                
                 {/* Export Dropdown - Icon Only */}
                 <div className="relative">
                   <button 
@@ -811,28 +825,22 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <h2 className={darkMode ? 'text-xl font-bold text-white' : 'text-xl font-bold text-slate-900'}>AI Fiesta Analytics</h2>
-            {uniqueModelCount > 1 ? (
-              <button
-                onClick={() => setShowAllGraphs(!showAllGraphs)}
-                className={darkMode ? 'inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium bg-gray-800 text-gray-200 hover:bg-gray-700' : 'inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}
-              >
-                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                {showAllGraphs ? 'Hide' : 'View All'}
-              </button>
-            ) : null}
-          </div>
-
+          {/* Display all graphs by default */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <BarChart 
               data={responseTimeData} 
               title="Model Latency Comparison" 
               unit="s"
+              chartId="model-latency"
+              isExpanded={chartVisibility['model-latency']}
+              onToggleExpand={() => toggleChartVisibility('model-latency')}
             />
             <SimpleCircleChart 
               data={messagesTypedData} 
               title="Prompts per Model" 
+              chartId="prompts-per-model"
+              isExpanded={chartVisibility['prompts-per-model']}
+              onToggleExpand={() => toggleChartVisibility('prompts-per-model')}
             />
           </div>
 
@@ -841,26 +849,31 @@ export default function DashboardPage() {
               data={modelDataTimeData} 
               title="Throughput by Model" 
               unit="s"
+              chartId="throughput-by-model"
+              isExpanded={chartVisibility['throughput-by-model']}
+              onToggleExpand={() => toggleChartVisibility('throughput-by-model')}
             />
-            {showAllGraphs && (
-              <LineChart 
-                data={lineChartData} 
-                title="Latency Trends Over Time" 
-                metrics={lineChartMetrics}
-                metricLabels={lineChartMetricLabels}
-              />
-            )}
+            <LineChart 
+              data={lineChartData} 
+              title="Latency Trends Over Time" 
+              metrics={lineChartMetrics}
+              metricLabels={lineChartMetricLabels}
+              chartId="latency-trends"
+              isExpanded={chartVisibility['latency-trends']}
+              onToggleExpand={() => toggleChartVisibility('latency-trends')}
+            />
           </div>
 
-          {showAllGraphs && (
-            <div className="grid grid-cols-1 gap-6">
-              <ResponseTimeDistribution 
-                data={responseTimeDistributionData} 
-                title="Latency Distribution" 
-                unit="s"
-              />
-            </div>
-          )}
+          <div className="grid grid-cols-1 gap-6">
+            <ResponseTimeDistribution 
+              data={responseTimeDistributionData} 
+              title="Latency Distribution" 
+              unit="s"
+              chartId="latency-distribution"
+              isExpanded={chartVisibility['latency-distribution']}
+              onToggleExpand={() => toggleChartVisibility('latency-distribution')}
+            />
+          </div>
         </div>
       </div>
     </div>

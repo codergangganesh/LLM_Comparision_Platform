@@ -3,19 +3,33 @@
 import React, { useState } from 'react'
 import { dashboardService } from '@/services/dashboard.service'
 import { AI_MODELS } from '@/config/ai-models'
-import { TrendingUp } from 'lucide-react'
+import { TrendingUp, Eye, EyeOff } from 'lucide-react'
 
 interface LineChartProps {
   data: { period: string; [key: string]: string | number }[]
   title: string
   metrics: string[]
   metricLabels: Record<string, string>
+  chartId?: string
+  isExpanded?: boolean
+  onToggleExpand?: () => void
 }
 
-const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabels }) => {
+const LineChart: React.FC<LineChartProps> = ({ 
+  data, 
+  title, 
+  metrics, 
+  metricLabels,
+  chartId,
+  isExpanded = false,
+  onToggleExpand
+}) => {
+  // Show only first 4 metrics by default, unless expanded
+  const displayedMetrics = isExpanded ? metrics : metrics.slice(0, 4)
+  
   // Find min and max values for scaling
   const allValues: number[] = []
-  metrics.forEach(metric => {
+  displayedMetrics.forEach(metric => {
     data.forEach(d => {
       if (typeof d[metric] === 'number') {
         allValues.push(d[metric] as number)
@@ -54,13 +68,32 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow duration-300 relative">
-      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">{title}</h3>
-      {data.length > 0 && metrics.length > 0 ? (
-        <div className="h-64">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-bold text-gray-900 dark:text-white">{title}</h3>
+        {metrics.length > 0 && (
+          <div className="flex items-center space-x-2">
+            {metrics.length > 4 && onToggleExpand && (
+              <button 
+                onClick={onToggleExpand}
+                className="p-1 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                aria-label={isExpanded ? `Show fewer ${title}` : `Show all ${title}`}
+              >
+                {isExpanded ? (
+                  <EyeOff className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                ) : (
+                  <Eye className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                )}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      {data.length > 0 && displayedMetrics.length > 0 ? (
+        <div className="flex flex-col h-80">
           {/* Simple line chart representation */}
-          <div className="relative h-full">
+          <div className="relative flex-grow">
             {/* Y-axis labels */}
-            <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400">
+            <div className="absolute left-0 top-0 h-full flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400 py-4">
               <span>{maxValue.toFixed(1)}</span>
               <span>{((maxValue + minValue) / 2).toFixed(1)}</span>
               <span>{minValue.toFixed(1)}</span>
@@ -80,7 +113,7 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
               </div>
               
               {/* Lines for each metric */}
-              {metrics.map((metric, metricIndex) => {
+              {displayedMetrics.map((metric, metricIndex) => {
                 // Get distinct color for this model
                 const model = AI_MODELS.find(m => m.displayName === metric);
                 const color = dashboardService.getModelColor(model?.id || metric);
@@ -128,7 +161,7 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
                       const colorClass = getColorClass(color)
                       
                       // Collect values for this point across all metrics
-                      const pointValues = metrics
+                      const pointValues = displayedMetrics
                         .filter(m => typeof point[m] === 'number')
                         .map(m => {
                           const modelForMetric = AI_MODELS.find(mod => mod.displayName === m);
@@ -174,7 +207,7 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
               })}
               
               {/* X-axis labels */}
-              <div className="absolute bottom-0 left-8 right-0 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+              <div className="absolute bottom-0 left-8 right-0 flex justify-between text-xs text-gray-500 dark:text-gray-400 pb-4">
                 {data.map((point, index) => (
                   <span key={index} className="transform -translate-x-1/2">{point.period}</span>
                 ))}
@@ -183,8 +216,8 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
           </div>
           
           {/* Legend with trends */}
-          <div className="flex flex-wrap gap-4 mt-4">
-            {metrics.map((metric) => {
+          <div className="flex flex-wrap gap-3 mt-4 overflow-y-auto max-h-24">
+            {displayedMetrics.map((metric) => {
               // Get distinct color for this model
               const model = AI_MODELS.find(m => m.displayName === metric);
               const color = dashboardService.getModelColor(model?.id || metric);
@@ -219,7 +252,7 @@ const LineChart: React.FC<LineChartProps> = ({ data, title, metrics, metricLabel
               const colorClass = getColorClass(color)
               
               return (
-                <div key={metric} className="flex items-center">
+                <div key={metric} className="flex items-center min-w-max">
                   <div className={`w-3 h-3 rounded-full ${colorClass}`}></div>
                   <span className="ml-2 text-sm text-gray-600 dark:text-gray-300">
                     {metricLabels[metric] || metric}

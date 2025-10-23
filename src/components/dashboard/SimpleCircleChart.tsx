@@ -1,19 +1,31 @@
 'use client'
 
 import React, { useState } from 'react'
-import { MessageSquare, TrendingUp, TrendingDown } from 'lucide-react'
+import { MessageSquare, TrendingUp, TrendingDown, Eye, EyeOff } from 'lucide-react'
 
 interface SimpleCircleChartProps {
   data: { name: string; value: number; color: string }[]
   title: string
+  chartId?: string
+  isExpanded?: boolean
+  onToggleExpand?: () => void
 }
 
-const SimpleCircleChart: React.FC<SimpleCircleChartProps> = ({ data, title }) => {
+const SimpleCircleChart: React.FC<SimpleCircleChartProps> = ({ 
+  data, 
+  title,
+  chartId,
+  isExpanded = false,
+  onToggleExpand
+}) => {
+  // Show only first 4 items by default, unless expanded
+  const displayedData = isExpanded ? data : data.slice(0, 4)
+  
   // Calculate total value
-  const total = data.reduce((sum, item) => sum + item.value, 0)
+  const total = displayedData.reduce((sum, item) => sum + item.value, 0)
   
   // Calculate average value
-  const average = data.length > 0 ? total / data.length : 0
+  const average = displayedData.length > 0 ? total / displayedData.length : 0
   
   const [hoveredSegment, setHoveredSegment] = useState<{name: string, value: number, percentage: number} | null>(null)
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 })
@@ -39,15 +51,30 @@ const SimpleCircleChart: React.FC<SimpleCircleChartProps> = ({ data, title }) =>
           {title}
         </h3>
         {data.length > 0 && (
-          <div className="flex items-center text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">
-            <MessageSquare className="w-3 h-3 mr-1 text-gray-500 dark:text-gray-400" />
-            <span className="font-medium text-gray-900 dark:text-white">
-              {total} total
-            </span>
+          <div className="flex items-center space-x-2">
+            <div className="flex items-center text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700">
+              <MessageSquare className="w-3 h-3 mr-1 text-gray-500 dark:text-gray-400" />
+              <span className="font-medium text-gray-900 dark:text-white">
+                {total} total
+              </span>
+            </div>
+            {data.length > 4 && onToggleExpand && (
+              <button 
+                onClick={onToggleExpand}
+                className="p-1 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                aria-label={isExpanded ? `Show fewer ${title}` : `Show all ${title}`}
+              >
+                {isExpanded ? (
+                  <EyeOff className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                ) : (
+                  <Eye className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                )}
+              </button>
+            )}
           </div>
         )}
       </div>
-      {data.length > 0 ? (
+      {displayedData.length > 0 ? (
         <div className="flex flex-col md:flex-row items-center">
           {/* Simple circle with total count */}
           <div className="relative w-40 h-40 flex-shrink-0 mb-6 md:mb-0">
@@ -61,7 +88,7 @@ const SimpleCircleChart: React.FC<SimpleCircleChartProps> = ({ data, title }) =>
           
           {/* Legend on the right side */}
           <div className="ml-0 md:ml-6 w-full">
-            {data.map((segment, index) => {
+            {displayedData.map((segment, index) => {
               // Calculate percentage
               const percentage = total > 0 ? (segment.value / total) * 100 : 0
               
