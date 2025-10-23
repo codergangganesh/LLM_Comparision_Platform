@@ -31,7 +31,7 @@ import {
 } from 'lucide-react'
 import SimpleProfileIcon from '@/components/layout/SimpleProfileIcon'
 import NotificationBell from '@/components/ui/NotificationBell'
-import StripePaymentButton from '@/components/ui/StripePaymentButton'
+
 
 interface MetricCard {
   title: string
@@ -608,24 +608,6 @@ export default function DashboardPage() {
                     </div>
                   )}
                 </div>
-                
-                {/* Payment Button */}
-                <StripePaymentButton
-                  priceId="price_example" // Replace with actual price ID
-                  className={`px-4 py-2 rounded-xl transition-colors duration-200 ${
-                    darkMode 
-                      ? 'bg-gradient-to-r from-green-900/30 to-emerald-900/30 border border-green-700/30 hover:from-green-800/40' 
-                      : 'bg-gradient-to-r from-green-100 to-emerald-100 border border-green-200 hover:from-green-200'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    <span className={`text-sm font-medium ${
-                      darkMode ? 'text-green-300' : 'text-green-700'
-                    }`}>
-                      Upgrade Plan
-                    </span>
-                  </div>
-                </StripePaymentButton>
                 
                 <div className={`px-4 py-2 rounded-xl transition-colors duration-200 ${
                   darkMode 
